@@ -34,7 +34,8 @@ s.close()
 
 ## Contents
 
-- **[PROTOCOL.md](PROTOCOL.md)** — full protocol reference: every command, response format, Zone 2, Audyssey, surround modes, activity sequences, error handling
+- **[PROTOCOL.md](PROTOCOL.md)** — TCP port 23 reference: every command, response format, Zone 2, Audyssey, surround modes, activity sequences, error handling
+- **[IR.md](IR.md)** — IR blaster fallback: when TCP isn't enough, hardware options, example codes for Marantz Cinema 70s
 - **[examples/node.js](examples/node.js)** — reusable `send` / `sendWait` helpers in Node.js
 - **[examples/python.py](examples/python.py)** — equivalent helpers in Python
 

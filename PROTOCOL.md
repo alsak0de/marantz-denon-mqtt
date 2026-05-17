@@ -415,6 +415,10 @@ socket.on("data", chunk => {
 });
 ```
 
+### Single concurrent connection
+
+Port 23 accepts **only one TCP connection at a time**. A second connect attempt while a connection is already open will either be refused or silently ignored. If your application opens and closes connections per command (the pattern used in this guide), this is rarely an issue. If you hold a persistent connection, ensure no other client (Home Assistant, openHAB, another script) is also connected — the second client will fail without any error visible to the first.
+
 ### Do not cache state across sessions
 
 Volume, input, Zone 2 state, and mute can change at any time via the physical remote, the front panel, or the HEOS app. Always query fresh state before acting on stale assumptions.

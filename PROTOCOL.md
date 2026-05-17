@@ -119,18 +119,20 @@ Append `?` to any command prefix to query that parameter:
 
 ```
 PW?    → power state
-MV?    → master volume
+MV?    → master volume + MVMAX ceiling
 MU?    → mute state
-SI?    → selected input
-MS?    → surround / sound mode
-SPPR?  → speaker preset
-Z2?    → Zone 2 power state
+SI?    → selected input (+ companion video/OSD state lines)
+ZM?    → main zone power
+MS?    → surround / sound mode (+ companion EQ state lines)
+SPPR?  → speaker preset  ⚠ unresponsive on some models in standby
+CV?    → all channel volume trims + CVEND sentinel
+Z2?    → Zone 2 power + source + volume (+ companion video/OSD state lines)
 ```
 
-Query everything at once (900 ms collect window):
+Query core state at once (900 ms collect window):
 
 ```js
-const lines = await send(host, ["PW?", "MV?", "MU?", "SI?", "MS?", "SPPR?", "Z2?"], 900);
+const lines = await send(host, ["PW?", "MV?", "MU?", "SI?", "ZM?", "MS?", "SPPR?", "Z2?"], 900);
 ```
 
 ### Response parsing
@@ -140,14 +142,28 @@ const lines = await send(host, ["PW?", "MV?", "MU?", "SI?", "MS?", "SPPR?", "Z2?
 | `PW` | power | `PWON`, `PWSTANDBY` |
 | `MU` | mute | `MUON`, `MUOFF` |
 | `SI` | input | `SIAUX1`, `SINET`, `SISAT/CBL` |
+| `ZM` | mainZone | `ZMON`, `ZMOFF` |
 | `MS` | soundMode | `MSSTEREO`, `MSDTS NEURAL:X`, `MSAUTO` |
 | `SPPR` | speakerPreset | `SPPR 1`, `SPPR 2` — space between prefix and digit |
 | `MV` | volume | see encoding below |
-| `MVMAX` | — | ignore — reports ceiling, not current level |
+| `MVMAX` | — | reports volume ceiling — same 3-digit encoding as `MV` |
+| `CV{ch}` | channelTrim | `CVFL 50`, `CVC 50` — 50 = 0 dB; see channel volume section |
+| `CVEND` | — | sentinel marking end of a `CV?` response burst |
 | `Z2ON` / `Z2OFF` | zone2 | exact strings — match literally, not as prefix |
 | `Z2MU` | zone2Muted | `Z2MUON`, `Z2MUOFF` |
-| `Z2{NN}` | zone2Volume | `Z250` → 50 |
+| `Z2{NN}` | zone2Volume | `Z256` → 56 |
 | `Z2{source}` | zone2Source | `Z2NET`, `Z2AUX1` |
+
+#### Companion responses
+
+Several queries return unsolicited companion lines alongside the primary response. Parse them all — do not discard lines that do not match the queried prefix:
+
+| Query | Companion lines also returned |
+|---|---|
+| `SI?` | `SV*` (video select), `VSS*` (video processing), `OPAL*` (OSD settings) |
+| `MS?` | `PSDRC`, `PSLFE`, `PSBAS`, `PSTRE`, `PSTONE CTRL` |
+| `CV?` | `CVEND` (end sentinel), `DCAUTO` (digital input mode) |
+| `Z2?` | `Z2{source}`, `Z2{volume}`, `SV*`, `VSS*`, `OPAL*` |
 
 #### Volume encoding
 
@@ -167,7 +183,9 @@ const volume = raw.length === 3
   : raw;
 ```
 
-Display scale: **0–98**. Typical listening range: 40–70.
+The `MVMAX` response uses the same encoding and reports the hardware ceiling, which varies by model — a Cinema 70s probe returned `MVMAX 695` (69.5 dB max), not the 98 stated in the 2012 Denon protocol PDF.
+
+Per the official spec, **MV80 = 0 dB** reference level. Levels above 80 are positive gain (+0.5 dB per step); levels below are attenuation. MV00 is the minimum (below −79.5 dB). Typical listening: MV40–MV70.
 
 ---
 
@@ -312,6 +330,75 @@ Presets are configured in the receiver's setup menu. The protocol just switches 
 
 ---
 
+## Channel volume trim
+
+Individual speaker level offsets. Each channel has its own `CV{ch}` prefix.
+
+```
+CV{ch} UP\r       → CV{ch} {new_level}    (+1 step)
+CV{ch} DOWN\r     → CV{ch} {new_level}    (−1 step)
+CV{ch} {NN}\r     → CV{ch} {NN}           (absolute, 38–62, 50 = 0 dB)
+CV?\r             → all channels + CVEND sentinel
+```
+
+| Prefix | Channel |
+|---|---|
+| `CVFL` | Front Left |
+| `CVFR` | Front Right |
+| `CVC` | Centre |
+| `CVSW` | Subwoofer |
+| `CVSL` | Surround Left |
+| `CVSR` | Surround Right |
+
+Scale: **38–62**, where **50 = 0 dB**. A `CV?` query returns all channels simultaneously terminated by `CVEND`.
+
+---
+
+## Main zone
+
+```
+ZMON\r     → ZMON     (main zone on)
+ZMOFF\r    → ZMOFF    (main zone off — not the same as standby)
+ZM?\r      → ZMON | ZMOFF
+```
+
+`ZM` controls the main zone amplifier independently of overall power. On most units `ZMOFF` mutes the main zone outputs while keeping the network stack and Zone 2 alive.
+
+---
+
+## Signal input mode
+
+```
+SD{mode}\r    →  SD{mode}
+SD?\r         →  SDAUTO | SDHDMI | SDDIGITAL | SDANALOG
+```
+
+| Command | Effect |
+|---|---|
+| `SDAUTO\r` | Auto (priority: HDMI → Digital → Analog) |
+| `SDHDMI\r` | Force HDMI input |
+| `SDDIGITAL\r` | Force digital input (optical / coaxial) |
+| `SDANALOG\r` | Force analog input |
+
+---
+
+## Sleep timer
+
+```
+SLP{NNN}\r    →  SLP{NNN}    (001–120 minutes, e.g. SLP030 = 30 min)
+SLPOFF\r      →  SLPOFF      (cancel)
+SLP?\r        →  SLP{NNN} | SLPOFF
+```
+
+Zone 2 has its own independent sleep timer:
+```
+Z2SLP{NNN}\r    →  Z2SLP{NNN}
+Z2SLPOFF\r      →  Z2SLPOFF
+Z2SLP?\r        →  Z2SLP{NNN} | Z2SLPOFF
+```
+
+---
+
 ## Audyssey / EQ
 
 ```
@@ -321,15 +408,31 @@ PSDYNEQ OFF\r    →  PSDYNEQ OFF
 
 Pure Direct mode disables Audyssey automatically on the hardware side — the receiver does **not** re-enable it when you switch to a different surround mode. If your application switches modes, explicitly send `PSDYNEQ ON\r` after any transition away from Pure Direct.
 
-Other documented Audyssey/EQ parameters (availability varies by model):
+Additional `PS` parameters — **✓ = confirmed on Cinema 70s**, blank = from official spec, unverified on modern hardware:
 
-| Command | Function |
-|---|---|
-| `PSDYNVOL {OFF/LIT/MED/HEV}\r` | Dynamic Volume |
-| `PSREFLEV {0/5/10/15}\r` | Reference Level Offset |
-| `PSMULTEQ:{MODE}\r` | MultEQ mode (AUDYSSEY / BYP.LR / FLAT / MANUAL / OFF) |
-| `PSBAS {UP/DOWN/NN}\r` | Bass trim |
-| `PSTREB {UP/DOWN/NN}\r` | Treble trim |
+| Command | Function | Cinema 70s |
+|---|---|---|
+| `PSDYNEQ ON/OFF\r` | Dynamic EQ | ✓ |
+| `PSREFLEV {0/5/10/15}\r` | Reference Level Offset | ✓ |
+| `PSDYNVOL {OFF/LIT/MED/HEV}\r` | Dynamic Volume | ✓ |
+| `PSBAS {UP/DOWN/NN}\r` | Bass trim (38–62, 50 = 0 dB) | ✓ |
+| `PSTRE {UP/DOWN/NN}\r` | Treble trim (38–62, 50 = 0 dB) | ✓ |
+| `PSTONE CTRL {ON/OFF}\r` | Tone control on/off | ✓ |
+| `PSDRC {OFF/LOW/MID/HI/AUTO}\r` | Dynamic compression | ✓ |
+| `PSLFE {NN}\r` | LFE level (00–10, 00 = 0 dB) | ✓ |
+| `PSEFF {NN}\r` | Effect level | ✓ |
+| `PSDEL {NNN}\r` | Effect delay (000–999 ms) | ✓ |
+| `PSSWR {ON/OFF}\r` | Subwoofer on/off | ✓ |
+| `PSLOM {ON/OFF}\r` | Loudness management | ✓ |
+| `PSDELAY {NNN}\r` | Audio delay (000–200 ms) | ✓ |
+| `PSMULTEQ:{MODE}\r` | MultEQ mode (AUDYSSEY/BYP.LR/FLAT/MANUAL/OFF) | — |
+| `PSCINEMA EQ.{ON/OFF}\r` | Cinema EQ | — |
+| `PSPAN {ON/OFF}\r` | Panorama (Dolby PL II) | — |
+| `PSDIM {NN}\r` | Dimension | — |
+| `PSCEN {NN}\r` | Centre width | — |
+| `PSCEI {NN}\r` | Centre image | — |
+| `PSRSZ {S/MS/M/ML/L}\r` | Room size | — |
+| `PSRSTR {OFF/MODE1/MODE2/MODE3}\r` | Audio restorer | — |
 
 ---
 
@@ -347,7 +450,7 @@ Zone 2 has an **independent amplifier, source selector, and volume control**. Al
 | `Z2MUON\r` | Mute Zone 2 |
 | `Z2MUOFF\r` | Unmute Zone 2 |
 | `Z2{source}\r` | Set Zone 2 source (e.g. `Z2NET\r`, `Z2AUX1\r`) |
-| `Z2?\r` | Query Zone 2 power — returns `Z2ON` or `Z2OFF` |
+| `Z2?\r` | Query Zone 2 — returns power, source, volume + companion video state lines |
 
 **Ordering rules:**
 1. Send `Z2OFF` before `PWSTANDBY` — Zone 2 will prevent true standby otherwise
@@ -436,6 +539,71 @@ Volume, input, Zone 2 state, and mute can change at any time via the physical re
 | Spotify Connect | Spotify Web API | HTTPS | Playback control when AVR is a Spotify target |
 
 Set the input to `NET` over TCP 23, then control playback via the appropriate upper layer. Do not attempt to control Spotify playback through TCP 23 or HEOS CLI — they are separate systems.
+
+---
+
+## Observed but undocumented responses
+
+The following response prefixes have been observed on a Marantz Cinema 70s but are not in any published protocol document. Their exact semantics are inferred, not confirmed. Community contributions welcome.
+
+| Prefix | Observed example | Inferred meaning |
+|---|---|---|
+| `SYSMI` | `SYSMI Multi Ch Stereo` | Current surround mode in human-readable form |
+| `SYSDA` | `SYSDA FLAC` | Current audio stream format (FLAC, PCM, DTS, etc.) |
+| `OPINFINS` | `OPINFINS 11111111111111000000` | Input availability bitmask |
+| `OPINFASP` | `OPINFASP 11111100000000000000000000000000` | Audio stream property bitmask |
+| `SV` | `SVOFF`, `SVAUX1` | Video select state (companion to `SI?` and `Z2?`) |
+| `VSS` | `VSSCHOFF`, `VSVPMAUTO` | Video processing / scaling settings |
+| `OPAL` | `OPALSSET ON`, `OPALSDSP OFF`, `OPALSVAL 000` | OSD overlay settings |
+| `CVEND` | `CVEND` | End-of-list sentinel terminating a `CV?` response burst |
+| `DCAUTO` | `DCAUTO` | Digital input mode — returned as companion to `CV?` |
+
+---
+
+## Model compatibility
+
+Results from running `test/probe.mjs` against specific units. Add your own by submitting a PR with your `results-{model}.json` file.
+
+| Command | Cinema 70s | Notes |
+|---|---|---|
+| `PW?` | ✓ | |
+| `MV?` | ✓ | Also returns `MVMAX 695` (max = 69.5 dB) |
+| `MU?` | ✓ | |
+| `SI?` | ✓ | Returns 8 lines including video/OSD companion state |
+| `ZM?` | ✓ | |
+| `MS?` | ✓ | Returns surround mode + EQ companion state |
+| `MSQUICK?` | ✓ | Returns `SYSMI`, `SYSDA`, `OPINFINS`, `OPINFASP` |
+| `SPPR?` | — | No response (standby); may work when powered on |
+| `CV?` | ✓ | Returns all 6 channels + `CVEND` + `DCAUTO` |
+| `SD?` | ✓ | |
+| `DC?` | — | Not supported |
+| `SV?` | ✓ | Returns 7 lines including video/OSD state |
+| `SLP?` | ✓ | |
+| `PSTONE CTRL?` | ✓ | |
+| `PSCINEMA EQ.?` | — | Not supported |
+| `PSMODE:?` | — | Not supported (legacy Dolby PL mode) |
+| `PSLOM?` | ✓ | |
+| `PSMULTEQ:?` | — | Not supported |
+| `PSDYNEQ?` | ✓ | |
+| `PSREFLEV?` | ✓ | |
+| `PSDYNVOL?` | ✓ | |
+| `PSBAS?` | ✓ | |
+| `PSTRE?` | ✓ | |
+| `PSDRC?` | ✓ | |
+| `PSLFE?` | ✓ | |
+| `PSEFF?` | ✓ | |
+| `PSDEL?` | ✓ | |
+| `PSPAN?` | — | Not supported (legacy Dolby PL II) |
+| `PSDIM?` | — | Not supported |
+| `PSCEN?` | — | Not supported |
+| `PSCEI?` | — | Not supported |
+| `PSSWR?` | ✓ | |
+| `PSRSZ?` | — | Not supported |
+| `PSDELAY?` | ✓ | |
+| `PSRSTR?` | — | Not supported |
+| `Z2?` | ✓ | Returns 10 lines including source, volume, video/OSD state |
+| `Z2MU?` | ✓ | |
+| `Z2SLP?` | ✓ | |
 
 ---
 
@@ -544,10 +712,14 @@ The codes below were captured from a Marantz Cinema 70s using a learning blaster
 
 ```
 # State query
-PW?     MV?     MU?     SI?     MS?     SPPR?   Z2?
+PW?     MV?     MU?     SI?     ZM?     MS?     CV?     SPPR?   Z2?     Z2MU?
+SD?     SLP?    Z2SLP?
 
 # Power
 PWON                    PWSTANDBY
+
+# Main zone
+ZMON                    ZMOFF
 
 # Volume
 MV{0-98}                MVUP                    MVDOWN
@@ -561,21 +733,42 @@ SISAT/CBL               SIDVD                   SIBD
 SIGAME                  SIPHONO                 SICD
 SITUNER                 SIMPLAY
 
+# Signal input mode
+SDAUTO                  SDHDMI                  SDDIGITAL               SDANALOG
+
 # Surround mode
 MSAUTO                  MSSTEREO                MSPURE DIRECT
 MSDTS NEURAL:X          MSMCH STEREO            MSDOLBY SURROUND
 
-# Smart Surround (use with caution — see stability warning in section above)
+# Smart Surround (community data needed — see section above)
 MSSMART                 MSSMART2CH              MSSMART5CH              MSSMART7CH
+
+# Quick Select (from official spec, unverified on modern hardware)
+MSQUICK1                MSQUICK2                MSQUICK3                MSQUICK4                MSQUICK5
+MSQUICK1 MEMORY         MSQUICK2 MEMORY         MSQUICK3 MEMORY         MSQUICK4 MEMORY         MSQUICK5 MEMORY
 
 # Speaker preset  (note the space)
 SPPR 1                  SPPR 2
 
-# Audyssey / EQ
-PSDYNEQ ON              PSDYNEQ OFF
-PSDYNVOL OFF            PSDYNVOL LIT            PSDYNVOL MED
-PSBAS UP                PSBAS DOWN              PSBAS {NN}
-PSTREB UP               PSTREB DOWN             PSTREB {NN}
+# Channel volume  (50 = 0 dB, range 38–62)
+CVFL {NN}               CVFR {NN}               CVC {NN}
+CVSW {NN}               CVSL {NN}               CVSR {NN}
+
+# Audyssey / EQ  (✓ = confirmed Cinema 70s)
+PSDYNEQ ON              PSDYNEQ OFF                                     ✓
+PSREFLEV {0/5/10/15}                                                    ✓
+PSDYNVOL OFF            PSDYNVOL LIT            PSDYNVOL MED            ✓
+PSBAS UP                PSBAS DOWN              PSBAS {NN}              ✓
+PSTRE UP                PSTRE DOWN              PSTRE {NN}              ✓
+PSTONE CTRL ON          PSTONE CTRL OFF                                 ✓
+PSDRC OFF               PSDRC LOW               PSDRC MID               ✓
+PSLFE {NN}              PSEFF {NN}              PSDEL {NNN}             ✓
+PSSWR ON                PSSWR OFF                                       ✓
+PSLOM ON                PSLOM OFF                                       ✓
+PSDELAY {NNN}                                                           ✓
+
+# Sleep timer
+SLP{NNN}                SLPOFF
 
 # Zone 2
 Z2ON                    Z2OFF

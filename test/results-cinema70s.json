@@ -1,0 +1,364 @@
+{
+  "host": "192.168.86.252",
+  "probed_at": "2026-05-17T12:04:14.297Z",
+  "results": [
+    {
+      "command": "PW?",
+      "group": "power",
+      "desc": "Power state",
+      "supported": true,
+      "responses": [
+        "PWSTANDBY"
+      ]
+    },
+    {
+      "command": "MV?",
+      "group": "volume",
+      "desc": "Master volume",
+      "supported": true,
+      "responses": [
+        "MV30",
+        "MVMAX 695"
+      ]
+    },
+    {
+      "command": "MU?",
+      "group": "volume",
+      "desc": "Mute state",
+      "supported": true,
+      "responses": [
+        "MUOFF"
+      ]
+    },
+    {
+      "command": "SI?",
+      "group": "input",
+      "desc": "Selected input",
+      "supported": true,
+      "responses": [
+        "SINET",
+        "SVOFF",
+        "SVAUX1",
+        "VSSCHOFF",
+        "VSVPMAUTO",
+        "OPALSSET ON",
+        "OPALSDSP OFF",
+        "OPALSVAL 000"
+      ]
+    },
+    {
+      "command": "ZM?",
+      "group": "zone_main",
+      "desc": "Main zone power",
+      "supported": true,
+      "responses": [
+        "ZMOFF"
+      ]
+    },
+    {
+      "command": "MS?",
+      "group": "surround",
+      "desc": "Surround / sound mode",
+      "supported": true,
+      "responses": [
+        "MSMCH STEREO",
+        "PSDRC OFF",
+        "PSLFE 00",
+        "PSBAS 50",
+        "PSTRE 50",
+        "PSTONE CTRL OFF"
+      ]
+    },
+    {
+      "command": "MSQUICK?",
+      "group": "surround",
+      "desc": "Quick Select current preset",
+      "supported": true,
+      "responses": [
+        "OPINFINS 11111111111111000000",
+        "SYSDA FLAC",
+        "OPINFASP 11111100000000000000000000000000",
+        "SYSMI Multi Ch Stereo"
+      ]
+    },
+    {
+      "command": "SPPR?",
+      "group": "speakers",
+      "desc": "Speaker preset",
+      "supported": false,
+      "responses": []
+    },
+    {
+      "command": "CV?",
+      "group": "channel_vol",
+      "desc": "Channel volume (all channels)",
+      "supported": true,
+      "responses": [
+        "CVFL 50",
+        "CVFR 50",
+        "CVC 50",
+        "CVSW 50",
+        "CVSL 50",
+        "CVSR 50",
+        "CVEND",
+        "DCAUTO"
+      ]
+    },
+    {
+      "command": "SD?",
+      "group": "signal",
+      "desc": "Signal input mode (HDMI/DIGITAL/ANALOG/AUTO)",
+      "supported": true,
+      "responses": [
+        "SDAUTO"
+      ]
+    },
+    {
+      "command": "DC?",
+      "group": "signal",
+      "desc": "Digital input mode (AUTO/PCM/DTS)",
+      "supported": false,
+      "responses": []
+    },
+    {
+      "command": "SV?",
+      "group": "signal",
+      "desc": "Video select mode",
+      "supported": true,
+      "responses": [
+        "SVOFF",
+        "SVAUX1",
+        "VSSCHOFF",
+        "VSVPMAUTO",
+        "OPALSSET ON",
+        "OPALSDSP OFF",
+        "OPALSVAL 000"
+      ]
+    },
+    {
+      "command": "SLP?",
+      "group": "timer",
+      "desc": "Main zone sleep timer",
+      "supported": true,
+      "responses": [
+        "SLPOFF"
+      ]
+    },
+    {
+      "command": "PSTONE CTRL?",
+      "group": "eq",
+      "desc": "Tone control on/off",
+      "supported": true,
+      "responses": [
+        "PSTONE CTRL OFF"
+      ]
+    },
+    {
+      "command": "PSCINEMA EQ.?",
+      "group": "eq",
+      "desc": "Cinema EQ on/off",
+      "supported": false,
+      "responses": []
+    },
+    {
+      "command": "PSMODE:?",
+      "group": "eq",
+      "desc": "Dolby PL mode",
+      "supported": false,
+      "responses": []
+    },
+    {
+      "command": "PSLOM?",
+      "group": "eq",
+      "desc": "Loudness management",
+      "supported": true,
+      "responses": [
+        "PSLOM OFF"
+      ]
+    },
+    {
+      "command": "PSMULTEQ:?",
+      "group": "eq",
+      "desc": "MultEQ mode",
+      "supported": false,
+      "responses": []
+    },
+    {
+      "command": "PSDYNEQ?",
+      "group": "eq",
+      "desc": "Dynamic EQ",
+      "supported": true,
+      "responses": [
+        "PSDYNEQ ON"
+      ]
+    },
+    {
+      "command": "PSREFLEV?",
+      "group": "eq",
+      "desc": "Reference level offset",
+      "supported": true,
+      "responses": [
+        "PSREFLEV 0"
+      ]
+    },
+    {
+      "command": "PSDYNVOL?",
+      "group": "eq",
+      "desc": "Dynamic Volume",
+      "supported": true,
+      "responses": [
+        "PSDYNVOL OFF"
+      ]
+    },
+    {
+      "command": "PSBAS?",
+      "group": "eq",
+      "desc": "Bass trim",
+      "supported": true,
+      "responses": [
+        "PSBAS 50"
+      ]
+    },
+    {
+      "command": "PSTRE?",
+      "group": "eq",
+      "desc": "Treble trim",
+      "supported": true,
+      "responses": [
+        "PSTRE 50"
+      ]
+    },
+    {
+      "command": "PSDRC?",
+      "group": "eq",
+      "desc": "Dynamic compression",
+      "supported": true,
+      "responses": [
+        "PSDRC OFF"
+      ]
+    },
+    {
+      "command": "PSLFE?",
+      "group": "eq",
+      "desc": "LFE level",
+      "supported": true,
+      "responses": [
+        "PSLFE 00"
+      ]
+    },
+    {
+      "command": "PSEFF?",
+      "group": "eq",
+      "desc": "Effect level",
+      "supported": true,
+      "responses": [
+        "PSEFF 00"
+      ]
+    },
+    {
+      "command": "PSDEL?",
+      "group": "eq",
+      "desc": "Effect delay",
+      "supported": true,
+      "responses": [
+        "PSDEL 000"
+      ]
+    },
+    {
+      "command": "PSPAN?",
+      "group": "eq",
+      "desc": "Panorama",
+      "supported": false,
+      "responses": []
+    },
+    {
+      "command": "PSDIM?",
+      "group": "eq",
+      "desc": "Dimension",
+      "supported": false,
+      "responses": []
+    },
+    {
+      "command": "PSCEN?",
+      "group": "eq",
+      "desc": "Centre width",
+      "supported": false,
+      "responses": []
+    },
+    {
+      "command": "PSCEI?",
+      "group": "eq",
+      "desc": "Centre image",
+      "supported": false,
+      "responses": []
+    },
+    {
+      "command": "PSSWR?",
+      "group": "eq",
+      "desc": "Subwoofer on/off",
+      "supported": true,
+      "responses": [
+        "PSSWR ON"
+      ]
+    },
+    {
+      "command": "PSRSZ?",
+      "group": "eq",
+      "desc": "Room size",
+      "supported": false,
+      "responses": []
+    },
+    {
+      "command": "PSDELAY?",
+      "group": "eq",
+      "desc": "Audio delay",
+      "supported": true,
+      "responses": [
+        "PSDELAY 000"
+      ]
+    },
+    {
+      "command": "PSRSTR?",
+      "group": "eq",
+      "desc": "Audio restorer",
+      "supported": false,
+      "responses": []
+    },
+    {
+      "command": "Z2?",
+      "group": "zone2",
+      "desc": "Zone 2 power / source",
+      "supported": true,
+      "responses": [
+        "Z2OFF",
+        "Z2NET",
+        "Z256",
+        "SVOFF",
+        "SVAUX1",
+        "VSSCHOFF",
+        "VSVPMAUTO",
+        "OPALSSET ON",
+        "OPALSDSP OFF",
+        "OPALSVAL 000"
+      ]
+    },
+    {
+      "command": "Z2MU?",
+      "group": "zone2",
+      "desc": "Zone 2 mute",
+      "supported": true,
+      "responses": [
+        "Z2MUOFF"
+      ]
+    },
+    {
+      "command": "Z2SLP?",
+      "group": "zone2",
+      "desc": "Zone 2 sleep timer",
+      "supported": true,
+      "responses": [
+        "Z2SLPOFF"
+      ]
+    }
+  ]
+}

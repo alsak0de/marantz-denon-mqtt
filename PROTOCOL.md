@@ -1,6 +1,10 @@
 # Marantz / Denon AVR — TCP Port 23 Control Guide
 
-This guide covers the RS-232-over-IP (Telnet) control protocol exposed by modern Marantz and Denon AV receivers on **TCP port 23**. The protocol is shared across the entire product line and has been stable since roughly 2010. Tested on the Cinema 70s, Cinema 60s, and X-series (AVR-X2700H, AVR-X4800H). Minor command availability differences exist between models — the receiver replies `?` for unsupported commands.
+This guide covers the RS-232-over-IP (Telnet) control protocol exposed by modern Marantz and Denon AV receivers on **TCP port 23**. It focuses on **receivers from approximately 2016 onward** and documents commands verified on current hardware.
+
+Denon publishes official protocol PDFs tied to specific older models (the most widely circulated is for the AVR-1713/1613, dated 2012). Those documents are useful as a historical command dictionary but predate HEOS, Audyssey MultEQ XT32, Dolby Atmos, DTS:X, and Neural:X — and do not reflect the command set of modern units. This guide exists to fill that gap with tested, community-maintained documentation.
+
+Minor command availability differences exist between models — the receiver replies `?` for unsupported commands. See the tested-on table in the README.
 
 ---
 
@@ -516,13 +520,21 @@ The codes below were captured from a Marantz Cinema 70s using a learning blaster
 | `heos` | HEOS input shortcut | `SINET` |
 | `aux1` | AUX 1 input | `SIAUX1` |
 | `phono` | Phono input | `SIPHONO` |
-| `smart_select_1`–`4` | Quick Select 1–4 | **No TCP equivalent** — recalls a full saved preset |
+| `smart_select_1`–`4` | Quick Select 1–4 | `MSQUICK1\r` – `MSQUICK4\r` (see note below) |
 | `up` / `down` / `left` / `right` / `enter` / `back` | OSD navigation | **No TCP equivalent** |
 | `setup` / `option` / `info` / `eco` | Menu / overlay buttons | **No TCP equivalent** |
 | `play` / `prev` / `next` | Transport | Partial — HEOS CLI covers these for HEOS sources |
 | `channel_up` / `channel_down` | Tuner / channel step | Model-dependent TCP alternative may exist |
 
-> **Quick Select (smart_select_1–4)** saves and recalls a complete receiver state: input, volume level, surround mode, and EQ settings together. It is the only way to atomically recall a user-defined preset. There is no TCP command that triggers a Quick Select recall — IR is the only programmatic path.
+> **Quick Select** saves and recalls a complete receiver state: input, volume level, surround mode, and EQ settings together. It is documented in the official Denon protocol as TCP-accessible via the `MS` command family:
+>
+> | Command | Function |
+> |---|---|
+> | `MSQUICK1\r` – `MSQUICK5\r` | Recall Quick Select preset 1–5 |
+> | `MSQUICK1 MEMORY\r` – `MSQUICK5 MEMORY\r` | Save current state to preset 1–5 |
+> | `MSQUICK ?\r` | Query current Quick Select status |
+>
+> These commands come from the official 2012 protocol PDF and have not yet been verified on modern hardware. Community reports welcome.
 >
 > **Personal note:** triggering Quick Select via the physical remote while the receiver was under TCP control caused instability in my setup — the unit became temporarily unresponsive to further TCP commands. This may be specific to my unit or configuration; I'm not suggesting it's a general bug. Worth being aware of if you're mixing remote and programmatic control.
 

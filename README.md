@@ -1,6 +1,8 @@
 # Marantz / Denon AVR — TCP Port 23 Control
 
-Community reference for the RS-232-over-IP (Telnet) protocol exposed by Marantz and Denon AV receivers on **TCP port 23**. Covers connection patterns, the full command set, known gotchas, and working code examples.
+Community reference for the RS-232-over-IP (Telnet) protocol exposed by Marantz and Denon AV receivers on **TCP port 23**. Covers connection patterns, commands verified on current hardware, known gotchas, and working code examples in Node.js and Python.
+
+Denon publishes official protocol PDFs for specific older models (most are dated 2010–2014) but these predate HEOS, Atmos, DTS:X, and Neural:X. This guide focuses on **modern receivers (2016+)** and is maintained by the community with real test results.
 
 ## Tested on
 

@@ -276,7 +276,24 @@ MS{mode}\r    →  MS{mode}
 | `MSMCH STEREO\r` | Multi-Ch Stereo | Stereo source spread across all speakers |
 | `MSDOLBY SURROUND\r` | Dolby Surround | Dolby upmix for stereo / non-Atmos sources |
 
-**Do not send `MSSMART\r`** — this command is known to corrupt Audyssey MultEQ calibration data on multiple models. Avoid it entirely.
+### Smart Surround modes
+
+The `MSSMART` family lets the receiver automatically select a surround mode based on the incoming signal:
+
+| Command | Display name | Behaviour |
+|---|---|---|
+| `MSSMART\r` | Smart Surround | Auto-selects between 2-ch and multi-ch based on source |
+| `MSSMART2CH\r` | Smart Stereo | Forces Smart selection within 2-channel modes |
+| `MSSMART5CH\r` | Smart 5-channel | Forces Smart selection within 5-channel modes |
+| `MSSMART7CH\r` | Smart 7-channel | Forces Smart selection within 7-channel modes |
+
+> **Stability warning — read before using.**  
+> Switching between `MSSMART*` variants, or between any `MSSMART*` mode and a conventional mode (e.g. `MSSTEREO`, `MSAUTO`), has been observed to cause receiver instability on multiple models and firmware versions. Symptoms include:
+> - The receiver stops responding to further commands on the same connection
+> - The mode change is silently ignored or reverts to the previous mode
+> - In severe cases: Audyssey MultEQ calibration data is corrupted, requiring a full re-calibration
+>
+> If you use these commands, always query state after applying to confirm the change took effect, build in a longer settle time (~500 ms) before sending any follow-up commands, and avoid switching directly from one `MSSMART*` variant to another without an intermediate `MSAUTO` or `MSSTEREO` step. Treat this family as experimental.
 
 ---
 
@@ -444,7 +461,9 @@ SITUNER                 SIMPLAY
 # Surround mode
 MSAUTO                  MSSTEREO                MSPURE DIRECT
 MSDTS NEURAL:X          MSMCH STEREO            MSDOLBY SURROUND
-# !! NEVER USE: MSSMART — corrupts Audyssey calibration data !!
+
+# Smart Surround (use with caution — see stability warning in section above)
+MSSMART                 MSSMART2CH              MSSMART5CH              MSSMART7CH
 
 # Speaker preset  (note the space)
 SPPR 1                  SPPR 2

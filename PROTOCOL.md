@@ -287,13 +287,7 @@ The `MSSMART` family lets the receiver automatically select a surround mode base
 | `MSSMART5CH\r` | Smart 5-channel | Forces Smart selection within 5-channel modes |
 | `MSSMART7CH\r` | Smart 7-channel | Forces Smart selection within 7-channel modes |
 
-> **Stability warning — read before using.**  
-> Switching between `MSSMART*` variants, or between any `MSSMART*` mode and a conventional mode (e.g. `MSSTEREO`, `MSAUTO`), has been observed to cause receiver instability on multiple models and firmware versions. Symptoms include:
-> - The receiver stops responding to further commands on the same connection
-> - The mode change is silently ignored or reverts to the previous mode
-> - In severe cases: Audyssey MultEQ calibration data is corrupted, requiring a full re-calibration
->
-> If you use these commands, always query state after applying to confirm the change took effect, build in a longer settle time (~500 ms) before sending any follow-up commands, and avoid switching directly from one `MSSMART*` variant to another without an intermediate `MSAUTO` or `MSSTEREO` step. Treat this family as experimental.
+> **Community data needed.** These commands are part of the documented protocol but are not widely tested via TCP. If you use them, query state after applying to confirm the change took effect and allow a longer settle time (~500 ms) before sending follow-up commands. Report your results — model, firmware version, and whether the command was accepted or returned `?`.
 
 ---
 
@@ -525,6 +519,8 @@ The codes below were captured from a Marantz Cinema 70s using a learning blaster
 | `channel_up` / `channel_down` | Tuner / channel step | Model-dependent TCP alternative may exist |
 
 > **Quick Select (smart_select_1–4)** saves and recalls a complete receiver state: input, volume level, surround mode, and EQ settings together. It is the only way to atomically recall a user-defined preset. There is no TCP command that triggers a Quick Select recall — IR is the only programmatic path.
+>
+> **Personal note:** triggering Quick Select via the physical remote while the receiver was under TCP control caused instability in my setup — the unit became temporarily unresponsive to further TCP commands. This may be specific to my unit or configuration; I'm not suggesting it's a general bug. Worth being aware of if you're mixing remote and programmatic control.
 
 ---
 

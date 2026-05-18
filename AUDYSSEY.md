@@ -19,14 +19,26 @@ The Audyssey-related `PS` commands on TCP port 23 are documented in [PROTOCOL.md
 Quick reference:
 
 ```
-PSDYNEQ ON/OFF          Dynamic EQ on/off
-PSREFLEV {0/5/10/15}    Reference level offset (dB)
+PSDYNEQ ON/OFF              Dynamic EQ on/off
+PSREFLEV {0/5/10/15}        Reference level offset (dB)
 PSDYNVOL {OFF/LIT/MED/HEV}  Dynamic Volume
-PSTONE CTRL ON/OFF      Tone control
-PSDRC {OFF/LOW/MID/HI/AUTO}  Dynamic compression
-PSLFE {00-10}           LFE level trim
-PSLOM ON/OFF            Loudness management
+PSTONE CTRL ON/OFF          Tone control
+PSDRC {OFF/LOW/MID/HI/AUTO} Dynamic compression
+PSLFE {00-10}               LFE level trim
+PSLOM ON/OFF                Loudness management
+PSSWL?                      Subwoofer level trim (read)
+PSSWL {NNN}                 Subwoofer level trim (set)
 ```
+
+**`PSSWL` encoding** — 3-digit value, **500 = 0 dB**, 0.1 dB per unit. Range approximately 380–620:
+
+```
+PSSWL 500  →  0.0 dB
+PSSWL 475  → -2.5 dB
+PSSWL 530  → +3.0 dB
+```
+
+This uses the same 3-digit convention as `MV` but centred at 500, not 800. Verified against the HTTP AJAX `SubwooferLevel1` field (raw `-25` = `-2.5 dB`) which matched `PSSWL 475` on the same unit.
 
 `PSMULTEQ` (MultEQ mode) is listed in the official spec but returns no response on the Cinema 70s — use the HTTP AJAX API instead.
 
@@ -276,6 +288,42 @@ Example response (Cinema 70s):
 
 Values are direct Hz. `Item>0<` in the selectable list represents "Full range" (no highpass filter applied to that speaker). The selectable values list is also returned — useful for building a UI that constrains to valid steps.
 
+#### Inferring speaker size from crossovers
+
+Speaker size (Small / Large) is stored in the `SpeakerConfig` subsection which is only accessible when the receiver is in setup mode and is not readable via any discovered AJAX type number or TCP command. It can be **inferred** from the crossover data:
+
+- **Crossover > 0 Hz** → speaker is set to **Small** (highpass filter applied; bass redirected to subwoofer)
+- **Speaker absent from crossover response** → speaker is set to **Large** (full range; no highpass)
+
+Cinema 70s example: FL = Small (60 Hz), FR = Small (90 Hz), Center = Small (40 Hz). Speakers not listed are Large. Note: FL and FR having different crossover points is unusual — verify in the receiver's speaker setup menu if this is unexpected.
+
+---
+
+### Speaker layout
+
+```
+GET /ajax/speakers/get_config?type=15
+```
+
+Returns which speaker groups are present and how they are connected. Each `Item` index represents a speaker group; only groups with `display="3"` are active in the current layout.
+
+#### Item index map
+
+| Index | Speaker group |
+|---|---|
+| 1 | Front L+R |
+| 2 | Center |
+| 3 | Surround L+R |
+| 4 | Surround Back L+R |
+| 5 | Front Height L+R |
+| 6 | Top Front L+R |
+| 7 | Subwoofer |
+| 14 | Zone 2 |
+
+Each item carries a `Config` (speaker type / amp routing) and `Conn` (connection state) child element. The `List` inside `Config` shows the selectable options for that group. Items with `display="1"` are not applicable to the current amp assignment.
+
+Cinema 70s layout (active groups): Front L+R (1), Center (2), Surround (3), Surround Back (4), Front Height (5), Subwoofer (7), Zone 2 (14).
+
 ---
 
 ### Subwoofer and LFE filters
@@ -403,14 +451,32 @@ Tools for step 2:
 | Reference level offset | ✓ | ✓ | — |
 | Dynamic Volume | ✓ | ✓ | — |
 | Tone control / bass / treble | ✓ | — | — |
+| Subwoofer level trim (PSSWL) | ✓ | ✓ | — |
 | Speaker distances | ✗ | ✓ | ✓ |
 | Speaker levels (trim) | ✓ (CV) | ✓ | ✓ |
 | Crossover frequencies | ✗ | ✓ | ✓ |
+| Speaker size (Small/Large) | ✗ | ✗ direct | infer from crossovers |
 | Subwoofer / LFE LPF | ✗ | ✓ | ✓ |
 | Graphic EQ bands | ✗ | ✓ | — |
+| Active speaker layout | ✗ | ✓ | — |
 | FIR filter coefficients | ✗ | ✗ | ✓ |
 | Measurement impulse responses | ✗ | ✗ | ✓ |
 | Trigger new measurement | ✗ | ✗ | ✗ (hardware-gated) |
+
+---
+
+## Observed but undocumented TCP responses
+
+The following response prefixes were observed on a Cinema 70s during speaker setup probing. They are not in any published protocol document.
+
+| Response | Example | Inferred meaning |
+|---|---|---|
+| `SSINFAISFSV` | `SSINFAISFSV NON` | Speaker setup info flag — `NON` = no atypical speaker configuration detected |
+| `SSSMG` | `SSSMG MUS` | Sound mode / surround mode group setting |
+| `BTTX` | `BTTX OFF` / `BTTX SP` | Bluetooth transmitter state |
+| `OPTXM` | `OPTXM AVL` / `OPTXM END` | Optical transmitter state; `END` terminates a burst |
+
+`BTTX` and `OPTXM` are broadcast unsolicited on power-on alongside the standard `PW`, `MV`, `SI` events. `SSINFAISFSV` and `SSSMG` respond to direct `?` queries; their full command families have not been mapped.
 
 ---
 

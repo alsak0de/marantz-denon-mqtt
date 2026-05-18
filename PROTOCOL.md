@@ -557,6 +557,10 @@ The following response prefixes have been observed on a Marantz Cinema 70s but a
 | `OPAL` | `OPALSSET ON`, `OPALSDSP OFF`, `OPALSVAL 000` | OSD overlay settings |
 | `CVEND` | `CVEND` | End-of-list sentinel terminating a `CV?` response burst |
 | `DCAUTO` | `DCAUTO` | Digital input mode — returned as companion to `CV?` |
+| `BTTX` | `BTTX OFF`, `BTTX SP` | Bluetooth transmitter state — broadcast unsolicited on power-on |
+| `OPTXM` | `OPTXM AVL`, `OPTXM END` | Optical transmitter state — `END` terminates burst; broadcast on power-on |
+| `SSINFAISFSV` | `SSINFAISFSV NON` | Speaker setup info flag — responds to `?` query; meaning of values unknown |
+| `SSSMG` | `SSSMG MUS` | Sound mode group — responds to `?` query; full command family unmapped |
 
 ---
 

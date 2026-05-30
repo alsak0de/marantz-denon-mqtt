@@ -37,8 +37,23 @@ s.close()
 - **[PROTOCOL.md](PROTOCOL.md)** — TCP port 23 reference: every command, response format, Zone 2, Audyssey, surround modes, activity sequences, error handling
 - **[AUDYSSEY.md](AUDYSSEY.md)** — Audyssey & speaker config API: HTTP AJAX interface (port 11080/10443), speaker distances/levels/crossovers, GraphicEQ, .ady file format, community tools
 - **[IR.md](IR.md)** — IR blaster fallback: when TCP isn't enough, hardware options, example codes for Marantz Cinema 70s
+- **[MARANTZ2MQTT.md](MARANTZ2MQTT.md)** — container-ready MQTT bridge for AVR state and commands
 - **[examples/node.js](examples/node.js)** — reusable `send` / `sendWait` helpers in Node.js
 - **[examples/python.py](examples/python.py)** — equivalent helpers in Python
+
+## marantz2mqtt
+
+This repo includes a Node.js MQTT bridge that keeps a persistent TCP connection
+to the AVR, publishes retained state topics, and accepts command topics without
+pre-publishing guessed state.
+
+```sh
+cp .env.example .env
+docker compose up -d --build marantz2mqtt
+```
+
+See **[MARANTZ2MQTT.md](MARANTZ2MQTT.md)** for configuration and the full topic
+contract.
 
 ## Contributing
 

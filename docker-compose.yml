@@ -1,0 +1,13 @@
+services:
+  marantz2mqtt:
+    build: .
+    container_name: marantz2mqtt
+    restart: unless-stopped
+    environment:
+      AVR_HOST: ${AVR_HOST}
+      AVR_PORT: ${AVR_PORT:-23}
+      MQTT_URL: ${MQTT_URL:-mqtt://mqtt:1883}
+      MQTT_USERNAME: ${MQTT_USERNAME:-}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-}
+      MQTT_BASE_TOPIC: ${MQTT_BASE_TOPIC:-home/marantz}
+      MQTT_PUBLISH_RAW: ${MQTT_PUBLISH_RAW:-true}

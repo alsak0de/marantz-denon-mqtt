@@ -2,7 +2,7 @@
 
 `heos2mqtt` is the planned MQTT bridge for the HEOS CLI on TCP port 1255.
 
-It should run beside `marantz2mqtt`, not inside it. `marantz2mqtt` owns AVR
+It should run beside `telnet2mqtt`, not inside it. `telnet2mqtt` owns AVR
 hardware control over TCP port 23. `heos2mqtt` owns HEOS players, playback,
 queues, browsing, favourites, playlists, groups, account state, and HEOS events.
 

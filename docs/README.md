@@ -9,8 +9,8 @@ modes, speaker presets, Audyssey/tone settings, zones, HDMI/video controls,
 menu navigation, tuner, and model-specific setup commands.
 
 - [Marantz/Denon Telnet protocol](telnet/MARANTZ_DENON_TELNET_PROTOCOL.md)
-- [marantz2mqtt bridge](telnet/MARANTZ2MQTT.md)
-- [marantz2mqtt command backlog](telnet/MARANTZ2MQTT_COMMAND_BACKLOG.md)
+- [telnet2mqtt bridge](telnet/TELNET2MQTT.md)
+- [telnet2mqtt command backlog](telnet/TELNET2MQTT_COMMAND_BACKLOG.md)
 - [Telnet visual test log](telnet/VISUAL_TEST_LOG.md)
 - [Audyssey notes](telnet/AUDYSSEY.md)
 - [IR fallback notes](telnet/IR.md)

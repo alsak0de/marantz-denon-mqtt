@@ -1,8 +1,7 @@
-# marantz2mqtt command backlog
+# telnet2mqtt command backlog
 
-This is the implementation backlog for expanding `marantz2mqtt` from the
-current narrow HomeStation bridge into full coverage of the documented Telnet
-space.
+This is the implementation backlog for expanding `telnet2mqtt` into full
+coverage of the documented AVR Telnet command space.
 
 Sources reviewed:
 
@@ -310,7 +309,7 @@ These are TCP port 23 network-control commands, distinct from HEOS playback.
 | `cmd/bluetooth/transmitter` | value | `BTTX {value}` |
 
 Do not expose `SYRST` as a normal structured command. If needed, make it
-raw-only and require explicit operator confirmation outside `marantz2mqtt`.
+raw-only and require explicit operator confirmation outside `telnet2mqtt`.
 
 ### Menu navigation
 

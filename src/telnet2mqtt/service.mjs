@@ -22,7 +22,7 @@ const STARTUP_QUERIES = [
   "PSTONE CTRL?",
 ];
 
-export class Marantz2Mqtt {
+export class Telnet2Mqtt {
   constructor(config, logger = console) {
     this.config = config;
     this.log = logger;

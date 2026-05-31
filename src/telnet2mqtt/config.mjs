@@ -25,7 +25,7 @@ export function readConfig(env = process.env) {
     mqttUsername: env.MQTT_USERNAME || undefined,
     mqttPassword: env.MQTT_PASSWORD || undefined,
     mqttBaseTopic: normalizeBaseTopic(env.MQTT_BASE_TOPIC ?? "home/marantz"),
-    mqttClientId: env.MQTT_CLIENT_ID ?? "marantz2mqtt",
+    mqttClientId: env.MQTT_CLIENT_ID ?? "telnet2mqtt",
     reconnectInitialMs: numberEnv(env.AVR_RECONNECT_INITIAL_MS, 2000),
     reconnectMaxMs: numberEnv(env.AVR_RECONNECT_MAX_MS, 60000),
     commandGapMs: numberEnv(env.AVR_COMMAND_GAP_MS, 100),

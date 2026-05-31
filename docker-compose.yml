@@ -1,7 +1,7 @@
 services:
-  marantz2mqtt:
+  telnet2mqtt:
     build: .
-    container_name: marantz2mqtt
+    container_name: telnet2mqtt
     restart: unless-stopped
     environment:
       AVR_HOST: ${AVR_HOST}

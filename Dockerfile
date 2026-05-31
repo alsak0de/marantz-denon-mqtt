@@ -10,4 +10,4 @@ COPY src ./src
 
 USER node
 
-CMD ["node", "bin/marantz2mqtt.mjs"]
+CMD ["node", "bin/telnet2mqtt.mjs"]

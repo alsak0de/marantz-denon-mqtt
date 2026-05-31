@@ -172,7 +172,7 @@ blindly. Some failures are source-specific, account-specific, or model-specific.
 
 For Marantz/Denon AVRs, HEOS playback normally requires the AVR input to be
 `NET`. That input is controlled through TCP port 23 (`SI NET`) and should remain
-the responsibility of `marantz2mqtt`.
+the responsibility of `telnet2mqtt`.
 
 HEOS volume is not the same contract as AVR master volume:
 

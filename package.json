@@ -4,10 +4,10 @@
   "description": "Community reference and MQTT bridge workspace for Marantz / Denon AVR Telnet and HEOS CLI control.",
   "type": "module",
   "bin": {
-    "marantz2mqtt": "./bin/marantz2mqtt.mjs"
+    "telnet2mqtt": "./bin/telnet2mqtt.mjs"
   },
   "scripts": {
-    "start:marantz2mqtt": "node bin/marantz2mqtt.mjs",
+    "start:telnet2mqtt": "node bin/telnet2mqtt.mjs",
     "test": "node --test \"test/**/*.test.mjs\""
   },
   "dependencies": {

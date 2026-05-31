@@ -41,8 +41,8 @@ s.close()
 
 - **[docs/README.md](docs/README.md)** — documentation map and protocol boundary
 - **[docs/telnet/MARANTZ_DENON_TELNET_PROTOCOL.md](docs/telnet/MARANTZ_DENON_TELNET_PROTOCOL.md)** — TCP port 23 reference: command format, response parsing, Zone 2, Audyssey, surround modes, activity sequences, error handling
-- **[docs/telnet/MARANTZ2MQTT.md](docs/telnet/MARANTZ2MQTT.md)** — container-ready MQTT bridge for AVR state and commands
-- **[docs/telnet/MARANTZ2MQTT_COMMAND_BACKLOG.md](docs/telnet/MARANTZ2MQTT_COMMAND_BACKLOG.md)** — tracked expansion plan for full Telnet command coverage
+- **[docs/telnet/TELNET2MQTT.md](docs/telnet/TELNET2MQTT.md)** — container-ready MQTT bridge for AVR Telnet state and commands
+- **[docs/telnet/TELNET2MQTT_COMMAND_BACKLOG.md](docs/telnet/TELNET2MQTT_COMMAND_BACKLOG.md)** — tracked expansion plan for full Telnet command coverage
 - **[docs/telnet/VISUAL_TEST_LOG.md](docs/telnet/VISUAL_TEST_LOG.md)** — live visual validation notes for the Cinema 70s
 - **[docs/heos/HEOS_CLI_PROTOCOL.md](docs/heos/HEOS_CLI_PROTOCOL.md)** — HEOS CLI protocol notes with official/source links
 - **[docs/heos/HEOS2MQTT.md](docs/heos/HEOS2MQTT.md)** — planned MQTT bridge contract for HEOS
@@ -52,18 +52,18 @@ s.close()
 - **[examples/node.js](examples/node.js)** — reusable `send` / `sendWait` helpers in Node.js
 - **[examples/python.py](examples/python.py)** — equivalent helpers in Python
 
-## marantz2mqtt
+## telnet2mqtt
 
 This repo includes a Node.js MQTT bridge that keeps a persistent TCP connection
-to the AVR, publishes retained state topics, and accepts command topics without
-pre-publishing guessed state.
+to the AVR Telnet port, publishes retained state topics, and accepts command
+topics without pre-publishing guessed state.
 
 ```sh
 cp .env.example .env
-docker compose up -d --build marantz2mqtt
+docker compose up -d --build telnet2mqtt
 ```
 
-See **[docs/telnet/MARANTZ2MQTT.md](docs/telnet/MARANTZ2MQTT.md)** for
+See **[docs/telnet/TELNET2MQTT.md](docs/telnet/TELNET2MQTT.md)** for
 configuration and the full topic contract.
 
 ## heos2mqtt

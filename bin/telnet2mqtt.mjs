@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { loadDotEnv, readConfig } from "../src/telnet2mqtt/config.mjs";
-import { Marantz2Mqtt } from "../src/telnet2mqtt/service.mjs";
+import { Telnet2Mqtt } from "../src/telnet2mqtt/service.mjs";
 
 loadDotEnv();
 
@@ -9,7 +9,7 @@ let service;
 
 try {
   const config = readConfig();
-  service = new Marantz2Mqtt(config);
+  service = new Telnet2Mqtt(config);
   service.start();
 } catch (err) {
   console.error(err.message);

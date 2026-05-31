@@ -1,6 +1,6 @@
-# marantz2mqtt
+# telnet2mqtt
 
-`marantz2mqtt` bridges a Marantz / Denon AVR TCP control socket to MQTT.
+`telnet2mqtt` bridges a Marantz / Denon AVR Telnet control socket to MQTT.
 It keeps one persistent TCP connection open to the AVR on port 23, publishes
 state changes from AVR echoes or unsolicited events, and subscribes to command
 topics that translate back into AVR commands.
@@ -12,14 +12,14 @@ topics are fire-and-forget.
 
 ```sh
 npm install
-AVR_HOST=192.168.1.50 MQTT_URL=mqtt://192.168.1.10:1883 npm run start:marantz2mqtt
+AVR_HOST=192.168.1.50 MQTT_URL=mqtt://192.168.1.10:1883 npm run start:telnet2mqtt
 ```
 
 Or with Docker Compose:
 
 ```sh
 cp .env.example .env
-docker compose up -d --build marantz2mqtt
+docker compose up -d --build telnet2mqtt
 ```
 
 ## Configuration
@@ -109,8 +109,8 @@ All state topics are published with `retain: true`.
 {"t":"2026-05-31T12:00:00.000Z","line":"SINET"}
 ```
 
-`home/marantz/event/raw` receives every AVR line. `home/marantz/event/error`
-receives command validation failures and unsupported-command replies.
+`home/marantz/event/error` receives command validation failures and
+unsupported-command replies.
 
 ## Command topics
 
@@ -170,7 +170,7 @@ default to avoid replaying old actions when the bridge restarts.
 The bridge never pre-publishes state after sending a command. MQTT state changes
 only after the AVR emits the corresponding line.
 
-See [MARANTZ2MQTT_COMMAND_BACKLOG.md](MARANTZ2MQTT_COMMAND_BACKLOG.md) for the
+See [TELNET2MQTT_COMMAND_BACKLOG.md](TELNET2MQTT_COMMAND_BACKLOG.md) for the
 complete expanded topic list and model-support caveats.
 
 Examples:

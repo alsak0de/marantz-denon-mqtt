@@ -1,10 +1,24 @@
 # heos2mqtt
 
-`heos2mqtt` is the planned MQTT bridge for the HEOS CLI on TCP port 1255.
+`heos2mqtt` is the MQTT bridge for the HEOS CLI on TCP port 1255.
 
 It should run beside `telnet2mqtt`, not inside it. `telnet2mqtt` owns AVR
 hardware control over TCP port 23. `heos2mqtt` owns HEOS players, playback,
 queues, browsing, favourites, playlists, groups, account state, and HEOS events.
+
+## Run
+
+```sh
+npm install
+HEOS_HOST=192.168.1.50 MQTT_URL=mqtt://192.168.1.10:1883 npm run start:heos2mqtt
+```
+
+Or with Docker Compose:
+
+```sh
+cp .env.example .env
+docker compose up -d --build heos2mqtt
+```
 
 ## Goals
 
@@ -16,8 +30,6 @@ queues, browsing, favourites, playlists, groups, account state, and HEOS events.
 
 ## Configuration
 
-Planned environment variables:
-
 | Variable | Default | Description |
 |---|---:|---|
 | `HEOS_HOST` | required | IP or hostname of any HEOS device on the LAN |
@@ -26,9 +38,12 @@ Planned environment variables:
 | `MQTT_USERNAME` | empty | MQTT username |
 | `MQTT_PASSWORD` | empty | MQTT password |
 | `MQTT_HEOS_BASE_TOPIC` | `home/heos` | Root HEOS MQTT topic |
+| `MQTT_PUBLISH_RAW` | `true` | Publish every HEOS message to `event/raw` |
 | `MQTT_IGNORE_RETAINED_COMMANDS` | `true` | Ignore retained command messages on startup |
 | `HEOS_COMMAND_GAP_MS` | `100` | Delay between queued HEOS commands |
 | `HEOS_REQUEST_TIMEOUT_MS` | `5000` | Request timeout |
+| `HEOS_HEARTBEAT_MS` | `30000` | HEOS socket heartbeat interval |
+| `HEOS_AUTOFOCUS_PLAYER_NAME` | empty | Optional friendly-name match published under `main/*` aliases |
 | `LOG_LEVEL` | `info` | Set to `silent` to reduce logs |
 
 ## State topics
@@ -43,6 +58,7 @@ All durable state topics should be retained.
 | `home/heos/player/{pid}/info` | JSON player info |
 | `home/heos/player/{pid}/state` | `play`, `pause`, `stop` |
 | `home/heos/player/{pid}/now-playing` | JSON media metadata |
+| `home/heos/main/now-playing` | Alias for matched `HEOS_AUTOFOCUS_PLAYER_NAME` |
 | `home/heos/player/{pid}/progress` | JSON progress payload |
 | `home/heos/player/{pid}/volume` | `0`-`100` |
 | `home/heos/player/{pid}/mute` | `on`, `off` |
@@ -55,6 +71,13 @@ All durable state topics should be retained.
 | `home/heos/account` | JSON account/check-account state |
 | `home/heos/event/raw` | non-retained raw HEOS event JSON |
 | `home/heos/event/error` | non-retained command/error JSON |
+
+`now-playing` is deliberately state-gated. HEOS returns the last played track
+while paused or stopped, so the bridge publishes `{}` unless
+`player/{pid}/state` is `play`. Fields such as `type`, `song`, `station`,
+`artist`, `album`, `image_url`, `mid`, `sid`, `qid`, and `album_id` are passed
+through from HEOS without service-ID translation, title coalescing, external
+Spotify enrichment, or title-completion heuristics.
 
 ## Command topics
 
@@ -151,13 +174,22 @@ Responses are published to `home/heos/response/{request_id}`.
 3. Send `system/register_for_change_events?enable=on`.
 4. Query players, groups, sources, and account state.
 5. For each player, query play state, now playing, volume, mute, play mode, and queue summary.
-6. Publish `availability=online`.
+6. Continue listening for HEOS events and heartbeat the socket every 30 seconds.
+
+`availability` uses MQTT Last-Will-and-Testament: the broker publishes
+`offline` if the bridge connection drops unexpectedly, and the bridge publishes
+`online` retained when connected to MQTT.
 
 ## Safety rules
 
 - Do not publish passwords in logs, retained topics, or error payloads.
 - Do not conflate HEOS volume with AVR master volume.
 - Do not try to control Spotify content through HEOS browse/search.
+- Do not call external music or media APIs from the bridge.
+- Do not translate `sid` into a service name; consumers can use `mid` prefixes
+  such as `spotify:track:` for service-specific interpretation.
+- Long track-title truncation is upstream HEOS firmware behaviour; the bridge
+  passes the truncated value through unchanged.
 - For Home Station playback, avoid routing the living-room AVR's own HEOS
   engine back into a Zone 2 NET capture loop.
 - Use request/response topics for large, paginated, or transient results.

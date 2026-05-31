@@ -11,3 +11,25 @@ services:
       MQTT_PASSWORD: ${MQTT_PASSWORD:-}
       MQTT_BASE_TOPIC: ${MQTT_BASE_TOPIC:-home/marantz}
       MQTT_PUBLISH_RAW: ${MQTT_PUBLISH_RAW:-true}
+      MQTT_IGNORE_RETAINED_COMMANDS: ${MQTT_IGNORE_RETAINED_COMMANDS:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+  heos2mqtt:
+    build: .
+    container_name: heos2mqtt
+    command: ["node", "bin/heos2mqtt.mjs"]
+    restart: unless-stopped
+    environment:
+      HEOS_HOST: ${HEOS_HOST}
+      HEOS_PORT: ${HEOS_PORT:-1255}
+      MQTT_URL: ${MQTT_URL:-mqtt://mqtt:1883}
+      MQTT_USERNAME: ${MQTT_USERNAME:-}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-}
+      MQTT_HEOS_BASE_TOPIC: ${MQTT_HEOS_BASE_TOPIC:-home/heos}
+      MQTT_PUBLISH_RAW: ${MQTT_PUBLISH_RAW:-true}
+      MQTT_IGNORE_RETAINED_COMMANDS: ${MQTT_IGNORE_RETAINED_COMMANDS:-true}
+      HEOS_COMMAND_GAP_MS: ${HEOS_COMMAND_GAP_MS:-100}
+      HEOS_REQUEST_TIMEOUT_MS: ${HEOS_REQUEST_TIMEOUT_MS:-5000}
+      HEOS_HEARTBEAT_MS: ${HEOS_HEARTBEAT_MS:-30000}
+      HEOS_AUTOFOCUS_PLAYER_NAME: ${HEOS_AUTOFOCUS_PLAYER_NAME:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}

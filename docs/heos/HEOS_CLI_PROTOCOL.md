@@ -43,7 +43,7 @@ Response shape:
 {
   "heos": {
     "command": "player/get_players",
-    "result": "ok",
+    "result": "success",
     "message": ""
   },
   "payload": []
@@ -70,6 +70,10 @@ or queue commands.
 | `system/heart_beat` | Keepalive / health probe. |
 | `system/reboot` | Reboot a HEOS speaker. |
 | `system/prettify_json_response` | Toggle pretty JSON responses. |
+
+`system/register_for_change_events` is scoped to one TCP connection. Every
+consumer that wants events must register on its own socket, and a reconnect
+requires registering again before events resume on the new connection.
 
 ### Player
 
@@ -164,9 +168,11 @@ The bridge should register for change events at startup and parse at least:
 
 ## Error handling
 
-The HEOS response `heos.result` is `ok` or `fail`. On `fail`, parse and publish
-the HEOS message string and any error code. Do not retry state-changing commands
-blindly. Some failures are source-specific, account-specific, or model-specific.
+The HEOS response `heos.result` is commonly `success` or `fail`; some protocol
+references and implementations use `ok` for success. Bridges should treat both
+`success` and `ok` as success. On `fail`, parse and publish the HEOS message
+string and any error code. Do not retry state-changing commands blindly. Some
+failures are source-specific, account-specific, or model-specific.
 
 ## Relationship to AVR Telnet
 

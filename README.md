@@ -45,7 +45,7 @@ s.close()
 - **[docs/telnet/TELNET2MQTT_COMMAND_BACKLOG.md](docs/telnet/TELNET2MQTT_COMMAND_BACKLOG.md)** — tracked expansion plan for full Telnet command coverage
 - **[docs/telnet/VISUAL_TEST_LOG.md](docs/telnet/VISUAL_TEST_LOG.md)** — live visual validation notes for the Cinema 70s
 - **[docs/heos/HEOS_CLI_PROTOCOL.md](docs/heos/HEOS_CLI_PROTOCOL.md)** — HEOS CLI protocol notes with official/source links
-- **[docs/heos/HEOS2MQTT.md](docs/heos/HEOS2MQTT.md)** — planned MQTT bridge contract for HEOS
+- **[docs/heos/HEOS2MQTT.md](docs/heos/HEOS2MQTT.md)** — MQTT bridge contract for HEOS playback, groups, browse, queues, and events
 - **[docs/heos/HEOS2MQTT_COMMAND_BACKLOG.md](docs/heos/HEOS2MQTT_COMMAND_BACKLOG.md)** — tracked execution plan for full documented HEOS CLI coverage
 - **[docs/telnet/AUDYSSEY.md](docs/telnet/AUDYSSEY.md)** — Audyssey & speaker config API: HTTP AJAX interface, speaker distances/levels/crossovers, GraphicEQ, .ady file format, community tools
 - **[docs/telnet/IR.md](docs/telnet/IR.md)** — IR blaster fallback: when TCP isn't enough, hardware options, example codes for Marantz Cinema 70s
@@ -68,10 +68,18 @@ configuration and the full topic contract.
 
 ## heos2mqtt
 
-`heos2mqtt` is planned as a separate bridge for the HEOS CLI on TCP port 1255.
-The design is tracked in **[docs/heos/HEOS2MQTT.md](docs/heos/HEOS2MQTT.md)**,
-with implementation tracking in
-**[docs/heos/HEOS2MQTT_COMMAND_BACKLOG.md](docs/heos/HEOS2MQTT_COMMAND_BACKLOG.md)**.
+`heos2mqtt` is a separate Node.js MQTT bridge for the HEOS CLI on TCP port
+1255. It runs beside `telnet2mqtt` and covers HEOS playback, players, groups,
+queues, browse/search request responses, sources, account state, and HEOS
+events.
+
+```sh
+cp .env.example .env
+docker compose up -d --build heos2mqtt
+```
+
+See **[docs/heos/HEOS2MQTT.md](docs/heos/HEOS2MQTT.md)** for configuration,
+topics, and production-use caveats.
 
 ## Contributing
 

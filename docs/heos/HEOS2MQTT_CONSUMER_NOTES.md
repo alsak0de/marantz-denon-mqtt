@@ -174,6 +174,25 @@ Item 2 above is a behavioural requirement for the bridge. It is also a trap for 
 
 ---
 
+## 12. Success result spelling varies
+
+The protocol examples commonly show `heos.result` as `ok`, but a Marantz Cinema
+70s on firmware `3.88.614` returned `success` for
+`system/register_for_change_events` and `player/get_players` during live
+testing. A strict `result === "ok"` implementation silently treats valid
+responses as non-success and never publishes startup state.
+
+**Required behaviour:**
+- Treat both `success` and `ok` as successful HEOS responses.
+- Treat `fail` and any unknown result as an error path and publish
+  `home/heos/event/error`.
+
+**Verification:**
+- Run `heos://player/get_players` against a real device and confirm the bridge
+  publishes `home/heos/players` whether the device returns `success` or `ok`.
+
+---
+
 ## What the bridge should NOT do
 
 Restating the negative side of several items above, for clarity:

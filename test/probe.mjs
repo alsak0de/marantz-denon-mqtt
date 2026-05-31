@@ -111,7 +111,9 @@ for (const { cmd, group, desc } of QUERIES) {
   process.stderr.write(`  ${(cmd + "?").padEnd(20)} `);
   const lines = await query(cmd);
 
-  const supported = lines.length > 0 && !lines.every(l => l === "?");
+  const supported = lines.length > 0
+    && !lines.some(l => l.startsWith("ERROR:"))
+    && !lines.every(l => l === "?");
   process.stderr.write(supported ? `✓  ${lines.join(" | ")}\n` : `–  (no response / ?)\n`);
 
   results.push({ command: cmd.trim() + "?", group, desc, supported, responses: lines });

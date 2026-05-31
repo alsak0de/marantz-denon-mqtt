@@ -1,6 +1,6 @@
 # Marantz / Denon AVR — IR Blaster Control
 
-Companion to [PROTOCOL.md](PROTOCOL.md). This document covers controlling a Marantz or Denon AVR via infrared when TCP port 23 is insufficient or unavailable.
+Companion to [MARANTZ_DENON_TELNET_PROTOCOL.md](MARANTZ_DENON_TELNET_PROTOCOL.md). This document covers controlling a Marantz or Denon AVR via infrared when TCP port 23 is insufficient or unavailable.
 
 ---
 

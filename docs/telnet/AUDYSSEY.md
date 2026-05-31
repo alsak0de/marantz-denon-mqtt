@@ -1,6 +1,6 @@
 # Marantz / Denon AVR — Audyssey & Speaker Config API
 
-Companion to [PROTOCOL.md](PROTOCOL.md). This document covers programmatic access to Audyssey settings, speaker geometry, and the GraphicEQ — going beyond the runtime toggles available on TCP port 23.
+Companion to [MARANTZ_DENON_TELNET_PROTOCOL.md](MARANTZ_DENON_TELNET_PROTOCOL.md). This document covers programmatic access to Audyssey settings, speaker geometry, and the GraphicEQ — going beyond the runtime toggles available on TCP port 23.
 
 Three distinct layers are involved, each with different capabilities:
 
@@ -14,7 +14,7 @@ Three distinct layers are involved, each with different capabilities:
 
 ## Layer 1 — TCP port 23
 
-The Audyssey-related `PS` commands on TCP port 23 are documented in [PROTOCOL.md](PROTOCOL.md). These cover runtime toggles only — no filter data, no speaker geometry.
+The Audyssey-related `PS` commands on TCP port 23 are documented in [MARANTZ_DENON_TELNET_PROTOCOL.md](MARANTZ_DENON_TELNET_PROTOCOL.md). These cover runtime toggles only — no filter data, no speaker geometry.
 
 Quick reference:
 

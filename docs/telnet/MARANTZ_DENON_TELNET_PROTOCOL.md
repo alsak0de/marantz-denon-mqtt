@@ -6,6 +6,28 @@ Denon publishes official protocol PDFs tied to specific older models (the most w
 
 Minor command availability differences exist between models — the receiver replies `?` for unsupported commands. See the tested-on table in the README.
 
+## Sources
+
+Primary local sources:
+
+- Live captures and probes from a Marantz Cinema 70s.
+- `test/results-cinema70s.json` in this repository.
+- `/home/albert/marantz/marantz_commands.json`, a broader local command dictionary assembled from captures and community references.
+
+Official/historical Denon protocol PDFs:
+
+- Denon AVR-1713/AVR-1613 control protocol v8.6.0: <https://assets.denon.com/DocumentMaster/UK/AVR1713_AVR1613_PROTOCOL_V860.pdf>
+- Denon AVR-2113CI/AVR-1913 control protocol: <https://downloads.denon.com/documentmaster/us/avr2113ci_avr1913_protocol_v04.pdf>
+- Denon AVR-2112CI/AVR-1912 control protocol v7.4.0: <https://assets.denon.com/documentmaster/master/avr2112ci_avr1912_protocol_v740.pdf>
+
+Community references:
+
+- Denon AVR protocol implementation data from the `ol-iver/denonavr` ecosystem.
+- RemoteCentral's manufacturer-supplied Denon RS-232/IP protocol sheet index: <https://files.remotecentral.com/library/22-1/denon/receiver/date.html>
+
+Use the official PDFs as historical references, not as complete modern command
+coverage. Modern HEOS/Atmos/DTS:X/Audyssey behavior requires live validation.
+
 ---
 
 ## Protocol basics

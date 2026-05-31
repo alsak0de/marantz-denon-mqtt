@@ -2,7 +2,25 @@ import { createConnection } from "net";
 import mqtt from "mqtt";
 import { commandFromMqtt, parseAvrLine } from "./avr-protocol.mjs";
 
-const STARTUP_QUERIES = ["SI?", "Z2?", "PW?", "MV?", "MU?", "MS?"];
+const STARTUP_QUERIES = [
+  "PW?",
+  "ZM?",
+  "MV?",
+  "MU?",
+  "SI?",
+  "MS?",
+  "SPPR?",
+  "Z2?",
+  "Z2MU?",
+  "SD?",
+  "SLP?",
+  "PSDYNEQ?",
+  "PSDYNVOL?",
+  "PSREFLEV?",
+  "PSBAS?",
+  "PSTRE?",
+  "PSTONE CTRL?",
+];
 
 export class Marantz2Mqtt {
   constructor(config, logger = console) {
@@ -120,12 +138,13 @@ export class Marantz2Mqtt {
     if (this.config.publishRaw) {
       this.publish("event/raw", JSON.stringify({ t: new Date().toISOString(), line }), false);
     }
+    this.publish("last/raw", line, true);
 
     const event = parseAvrLine(line);
     if (!event) return;
 
     this.currentState[event.key] = event.payload;
-    this.publish(event.topic, event.payload, true);
+    this.publish(event.topic, event.payload, event.topic !== "event/error");
   }
 
   async handleMqttMessage(topic, payloadBuffer, packet) {
@@ -138,8 +157,18 @@ export class Marantz2Mqtt {
 
     const relativeTopic = topic.slice(prefix.length);
     const payload = payloadBuffer.toString();
-    const command = commandFromMqtt(relativeTopic, payload, this.currentState);
-    this.enqueueSend(command);
+    try {
+      const commands = commandFromMqtt(relativeTopic, payload, this.currentState);
+      this.enqueueSend(...(Array.isArray(commands) ? commands : [commands]));
+    } catch (err) {
+      const error = {
+        t: new Date().toISOString(),
+        topic,
+        error: err.message,
+      };
+      this.publish("event/error", JSON.stringify(error), false);
+      throw err;
+    }
   }
 
   enqueueSend(...commands) {

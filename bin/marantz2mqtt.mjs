@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { loadDotEnv, readConfig } from "../src/marantz2mqtt/config.mjs";
-import { Marantz2Mqtt } from "../src/marantz2mqtt/service.mjs";
+import { loadDotEnv, readConfig } from "../src/telnet2mqtt/config.mjs";
+import { Marantz2Mqtt } from "../src/telnet2mqtt/service.mjs";
 
 loadDotEnv();
 

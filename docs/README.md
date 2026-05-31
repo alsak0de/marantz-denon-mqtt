@@ -24,6 +24,7 @@ status, and HEOS change events.
 - [HEOS CLI protocol](heos/HEOS_CLI_PROTOCOL.md)
 - [heos2mqtt bridge design](heos/HEOS2MQTT.md)
 - [heos2mqtt command backlog](heos/HEOS2MQTT_COMMAND_BACKLOG.md)
+- [heos2mqtt production-use notes](heos/HEOS2MQTT_CONSUMER_NOTES.md) — behavioural gotchas from real deployments; required reading for both bridge implementers and consumers
 
 ## Boundary
 

@@ -88,7 +88,12 @@ Publishing `home/heos/availability = online` on connect is correct. But publishi
 **Required behaviour:**
 - Set the `offline` value as the **MQTT Last-Will-and-Testament** when constructing the broker connection. The broker emits it on the consumer's behalf when it detects the bridge's connection has dropped.
 - Publish `online` retained on successful broker connect.
-- Do not also publish `offline` from a Node `exit` handler — it races with LWT and adds no value.
+- On planned shutdown via `SIGTERM` or `SIGINT`, explicitly publish retained
+  `offline` with QoS 1 and wait briefly for the broker ack before closing the
+  MQTT connection. The LWT does not fire for a clean MQTT disconnect, so this
+  explicit beacon covers `docker stop`, deploys, and `docker compose stop`.
+- Do not rely on a Node `exit` handler for the planned-shutdown publish; use
+  the signal path where async MQTT flushing can complete.
 
 This is the same pattern documented for `telnet2mqtt`; consumers will assume both bridges behave identically here.
 
@@ -193,6 +198,34 @@ responses as non-success and never publishes startup state.
 
 ---
 
+## 13. Some firmware clears mute when setting volume
+
+On a Marantz CINEMA 70s with HEOS firmware `3.88.614`,
+`player/set_volume` cleared player mute as a firmware-side effect. The HEOS app
+showed the same behaviour, and `event/player_volume_changed` included
+`mute=off` after setting volume while the player had previously been muted.
+
+Consumers often assume volume and mute are orthogonal. That assumption is not
+safe across HEOS firmware versions.
+
+**Required behaviour:**
+- Document the quirk as firmware-dependent and cite observed firmware so
+  consumers can verify their own device.
+- Keep the default protocol-faithful behaviour: pass HEOS volume and mute
+  events through as received.
+- Provide `HEOS_PRESERVE_MUTE_ON_VOLUME=false` as an optional, off-by-default
+  policy workaround. When enabled, the bridge checks player mute before sending
+  `set_volume`; if the following volume event reports `mute=off` while the
+  prior mute state was `on`, it sends `player/set_mute?state=on`.
+
+**Verification:**
+- If your firmware exhibits the mute-on-set-volume quirk, set
+  `HEOS_PRESERVE_MUTE_ON_VOLUME=true`, start with `mute=on`, publish
+  `home/heos/cmd/player/{pid}/volume = 1`, and confirm retained
+  `home/heos/player/{pid}/mute` returns to `on` within 2 seconds.
+
+---
+
 ## What the bridge should NOT do
 
 Restating the negative side of several items above, for clarity:
@@ -220,5 +253,8 @@ A bridge that handles the items above should pass all the following acceptance t
 8. Subscribe to `home/heos/event/raw` → every raw HEOS message arrives as JSON. Useful for debugging consumers and protocol exploration.
 9. Bridge runs continuously for 24+ hours → no socket drops, no event loss, heartbeat traffic is logged at debug level.
 10. Bridge restarts → all previously retained state is re-asserted within the startup sequence, no stale state from a previous deployment.
+11. Stop the bridge gracefully with `docker compose stop heos2mqtt` while watching `home/heos/availability` → retained availability transitions `online` → `offline` within about 2 seconds.
+12. Start the bridge on a healthy AVR, then run `mosquitto_sub -t home/heos/event/error -W 30` → no startup queue-probe error is emitted.
+13. If your firmware exhibits the mute-on-set-volume quirk, enable `HEOS_PRESERVE_MUTE_ON_VOLUME=true`, start from `mute=on`, publish `home/heos/cmd/player/{pid}/volume = 1`, and confirm retained `home/heos/player/{pid}/mute` returns to `on` within 2 seconds.
 
-If all ten pass, the bridge meets the production bar that the predecessor `heos-poller` reached only after each of these bugs was filed and fixed one at a time. Anyone deploying this bridge into a new household gets the corrected behaviour from day one.
+If all thirteen pass, the bridge meets the production bar that the predecessor `heos-poller` reached only after each of these bugs was filed and fixed one at a time. Anyone deploying this bridge into a new household gets the corrected behaviour from day one.

@@ -75,6 +75,34 @@ test("keeps browse commands request/response with generated request ids", () => 
   assert.equal(typeof generated.request_id, "string");
 });
 
+test("queue get omits range unless the consumer explicitly requests one", () => {
+  assert.deepEqual(commandFromMqtt("player/123/queue/get", ""), {
+    command: "player/get_queue",
+    params: { pid: "123" },
+    requestResponse: true,
+  });
+
+  const ranged = commandFromMqtt("player/123/queue/get", "{\"range\":\"0,9\"}");
+  assert.deepEqual(ranged, {
+    command: "player/get_queue",
+    params: { pid: "123", range: "0,9" },
+    requestResponse: true,
+  });
+  assert.equal(
+    formatHeosCommand(ranged.command, ranged.params),
+    "heos://player/get_queue?pid=123&range=0%2C9",
+  );
+});
+
+test("set mute responses update retained mute state", () => {
+  const parsed = parseHeosLine(JSON.stringify({
+    heos: { command: "player/set_mute", result: "ok", message: "pid=123&state=on" },
+  }));
+
+  assert.equal(parsed.command, "player/set_mute");
+  assert.deepEqual(parsed.params, { pid: "123", state: "on" });
+});
+
 test("validates raw commands and unsafe payloads", () => {
   assert.equal(commandFromMqtt("raw", "heos://system/heart_beat"), "heos://system/heart_beat");
   assert.deepEqual(commandFromMqtt("raw-batch", "[\"heos://system/heart_beat\"]"), ["heos://system/heart_beat"]);

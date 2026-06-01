@@ -28,6 +28,8 @@ export class Heos2Mqtt {
     this.pending = new Map();
     this.players = new Map();
     this.playStateByPid = new Map();
+    this.muteStateByPid = new Map();
+    this.pendingMutePreserve = new Set();
     this.autoFocusPid = null;
     this.stopped = false;
   }
@@ -42,6 +44,7 @@ export class Heos2Mqtt {
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
     this.socket?.destroy();
+    await this.publishAvailabilityOffline();
     await this.mqttClient?.endAsync?.();
   }
 
@@ -64,7 +67,7 @@ export class Heos2Mqtt {
         topic: `${mqttBaseTopic}/availability`,
         payload: "offline",
         retain: true,
-        qos: 0,
+        qos: 1,
       },
     });
 
@@ -210,9 +213,13 @@ export class Heos2Mqtt {
         break;
       case "event/player_volume_changed":
         this.publishPidScalar(event.params.pid, "volume", event.params.level);
+        if (event.params.mute != null) {
+          this.publishMuteState(event.params.pid, event.params.mute);
+          await this.maybeRestoreMuteAfterVolume(event.params.pid, event.params.mute);
+        }
         break;
       case "event/player_mute_changed":
-        this.publishPidScalar(event.params.pid, "mute", event.params.state);
+        this.publishMuteState(event.params.pid, event.params.state);
         break;
       case "event/player_queue_changed":
         await this.refreshQueue(event.params.pid);
@@ -261,10 +268,15 @@ export class Heos2Mqtt {
         this.publishGatedNowPlaying(response.params.pid, response.payload);
         break;
       case "player/get_volume":
+      case "player/set_volume":
+      case "player/volume_up":
+      case "player/volume_down":
         this.publishPidScalar(response.params.pid, "volume", response.params.level);
         break;
       case "player/get_mute":
-        this.publishPidScalar(response.params.pid, "mute", response.params.state);
+      case "player/set_mute":
+      case "player/toggle_mute":
+        this.publishMuteState(response.params.pid, response.params.state);
         break;
       case "player/get_play_mode":
         this.publishPidPayload(response.params.pid, "play-mode", {
@@ -305,7 +317,7 @@ export class Heos2Mqtt {
     await this.request("player/get_volume", { pid });
     await this.request("player/get_mute", { pid });
     await this.request("player/get_play_mode", { pid });
-    await this.refreshQueue(pid);
+    if (this.config.probeQueueOnStart) await this.refreshQueue(pid);
   }
 
   async refreshNowPlaying(pid) {
@@ -313,7 +325,7 @@ export class Heos2Mqtt {
   }
 
   async refreshQueue(pid) {
-    await this.request("player/get_queue", { pid, range: "0,9" });
+    await this.request("player/get_queue", { pid });
   }
 
   async handleMqttMessage(topic, payloadBuffer, packet) {
@@ -352,6 +364,7 @@ export class Heos2Mqtt {
       if (typeof item === "string") {
         responses.push(await this.requestRaw(item));
       } else {
+        await this.captureMuteBeforeVolume(item);
         const response = await this.request(item.command, item.params, item);
         responses.push(item.request_id ? { request_id: item.request_id, response } : response);
       }
@@ -451,6 +464,31 @@ export class Heos2Mqtt {
     this.publishPidPayload(pid, "now-playing", payload);
   }
 
+  publishMuteState(pid, state) {
+    if (pid == null || state == null) return;
+    const normalized = String(state).toLowerCase();
+    this.muteStateByPid.set(String(pid), normalized);
+    this.publishPidScalar(pid, "mute", normalized);
+  }
+
+  async captureMuteBeforeVolume(item) {
+    if (!this.config.preserveMuteOnVolume) return;
+    if (item?.command !== "player/set_volume" || item.params?.pid == null) return;
+
+    const pid = String(item.params.pid);
+    const response = await this.request("player/get_mute", { pid });
+    const state = String(response?.params?.state ?? this.muteStateByPid.get(pid) ?? "").toLowerCase();
+    if (state === "on") this.pendingMutePreserve.add(pid);
+  }
+
+  async maybeRestoreMuteAfterVolume(pid, mute) {
+    const key = String(pid);
+    if (!this.config.preserveMuteOnVolume || !this.pendingMutePreserve.has(key)) return;
+    this.pendingMutePreserve.delete(key);
+    if (String(mute).toLowerCase() !== "off") return;
+    await this.enqueueSend({ command: "player/set_mute", params: { pid: key, state: "on" } });
+  }
+
   publishPidPayload(pid, suffix, payload) {
     if (pid == null) return;
     const body = JSON.stringify(payload ?? {});
@@ -495,6 +533,17 @@ export class Heos2Mqtt {
     this.info(`MQTT <- ${topic} = ${payload}${retain ? " retained" : ""}`);
   }
 
+  async publishAvailabilityOffline() {
+    if (!this.mqttClient) return;
+    const topic = `${this.config.mqttBaseTopic}/availability`;
+    try {
+      await publishWithTimeout(this.mqttClient, topic, "offline", { retain: true, qos: 1 }, 1000);
+      this.info("shutdown: published availability=offline");
+    } catch (err) {
+      this.error("shutdown: failed to publish availability=offline:", err.message);
+    }
+  }
+
   info(...args) {
     if (this.config.logLevel !== "silent") this.log.log(timestamp(), ...args);
   }
@@ -528,6 +577,20 @@ function removePending(pending, command, entry) {
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function publishWithTimeout(client, topic, payload, options, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error(`publish timeout after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    client.publish(topic, payload, options, err => {
+      clearTimeout(timeout);
+      if (err) reject(err);
+      else resolve();
+    });
+  });
 }
 
 function timestamp() {

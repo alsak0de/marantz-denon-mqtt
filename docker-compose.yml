@@ -1,6 +1,7 @@
 services:
   telnet2mqtt:
-    build: .
+    image: ghcr.io/alsak0de/marantz-denon-mqtt:latest
+    command: ["node", "bin/telnet2mqtt.mjs"]
     container_name: telnet2mqtt
     restart: unless-stopped
     environment:
@@ -15,7 +16,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
 
   heos2mqtt:
-    build: .
+    image: ghcr.io/alsak0de/marantz-denon-mqtt:latest
     container_name: heos2mqtt
     command: ["node", "bin/heos2mqtt.mjs"]
     restart: unless-stopped

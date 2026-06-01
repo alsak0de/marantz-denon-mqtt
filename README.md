@@ -16,7 +16,7 @@ control and HEOS playback state through MQTT.
 
 ```sh
 cp .env.example .env
-docker compose up -d --build telnet2mqtt heos2mqtt
+docker compose up -d telnet2mqtt heos2mqtt
 ```
 
 Common retained state topics:
@@ -81,7 +81,7 @@ pre-publishing guessed state.
 
 ```sh
 cp .env.example .env
-docker compose up -d --build telnet2mqtt
+docker compose up -d telnet2mqtt
 ```
 
 See **[docs/telnet/TELNET2MQTT.md](docs/telnet/TELNET2MQTT.md)** for
@@ -95,11 +95,46 @@ browse/search request responses, sources, account state, and HEOS events.
 
 ```sh
 cp .env.example .env
-docker compose up -d --build heos2mqtt
+docker compose up -d heos2mqtt
 ```
 
 See **[docs/heos/HEOS2MQTT.md](docs/heos/HEOS2MQTT.md)** for configuration,
 topics, and production-use caveats.
+
+## Container images
+
+Published images are available from GHCR:
+
+```yaml
+services:
+  telnet2mqtt:
+    image: ghcr.io/alsak0de/marantz-denon-mqtt:latest
+    command: ["node", "bin/telnet2mqtt.mjs"]
+    restart: unless-stopped
+
+  heos2mqtt:
+    image: ghcr.io/alsak0de/marantz-denon-mqtt:latest
+    command: ["node", "bin/heos2mqtt.mjs"]
+    restart: unless-stopped
+```
+
+Tags:
+
+- `latest` tracks the current `main` build.
+- `main-<short-sha>` pins a specific commit from `main`.
+- `vX.Y.Z`, `X.Y`, and `X` are published from version tags such as `v1.2.3`.
+
+The image is multi-arch for `linux/amd64` and `linux/arm64`. After the first
+publish, set the GHCR package visibility to public in the GitHub package
+settings.
+
+For local development, build from source:
+
+```sh
+docker build -t marantz-denon-mqtt:dev .
+docker run --rm --env-file .env marantz-denon-mqtt:dev node bin/telnet2mqtt.mjs
+docker run --rm --env-file .env marantz-denon-mqtt:dev node bin/heos2mqtt.mjs
+```
 
 ## Contributing
 

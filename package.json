@@ -1,7 +1,7 @@
 {
-  "name": "marantz-denon-api",
+  "name": "marantz-denon-mqtt",
   "version": "0.1.0",
-  "description": "Community reference and MQTT bridge workspace for Marantz / Denon AVR Telnet and HEOS CLI control.",
+  "description": "MQTT bridges for Marantz / Denon AVR Telnet control and HEOS playback.",
   "type": "module",
   "bin": {
     "heos2mqtt": "./bin/heos2mqtt.mjs",

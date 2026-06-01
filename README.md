@@ -1,41 +1,62 @@
-# Marantz / Denon AVR and HEOS API
+# Marantz / Denon MQTT Bridges
 
-Community reference and MQTT bridge workspace for Marantz/Denon AVR control.
+Container-ready MQTT bridges for Marantz and Denon receivers.
 
-The repository is split by protocol:
+This repository provides two independent bridges that can run side-by-side:
 
-- AVR Telnet control on **TCP port 23** for hardware state and settings.
-- HEOS CLI control on **TCP port 1255** for playback, browse/search, queues, groups, and HEOS events.
+| Bridge | Protocol | Use it for |
+|---|---|---|
+| `telnet2mqtt` | AVR Telnet, TCP port 23 | Power, input, volume, mute, zones, surround modes, Audyssey, hardware state, and AVR settings |
+| `heos2mqtt` | HEOS CLI, TCP port 1255 | HEOS players, playback, now-playing, groups, queues, browse/search, sources, account state, and HEOS events |
 
-Spotify Connect is separate from both. HEOS CLI does not provide Spotify browse/search control.
+Use either bridge on its own, or run both together to expose AVR hardware
+control and HEOS playback state through MQTT.
+
+## Quick start
+
+```sh
+cp .env.example .env
+docker compose up -d --build telnet2mqtt heos2mqtt
+```
+
+Common retained state topics:
+
+```text
+home/marantz/power
+home/marantz/main/input
+home/marantz/main/volume
+home/marantz/main/mute
+home/heos/players
+home/heos/main/now-playing
+home/heos/main/mute
+```
+
+See the bridge docs for the full topic contracts:
+
+- **[telnet2mqtt](docs/telnet/TELNET2MQTT.md)** — AVR hardware state and commands
+- **[heos2mqtt](docs/heos/HEOS2MQTT.md)** — HEOS playback, browse/search, groups, queues, and events
+
+## Protocol boundary
+
+The bridges are separate because Marantz/Denon receivers expose separate
+control surfaces:
+
+- AVR Telnet on **TCP port 23** controls hardware state and settings.
+- HEOS CLI on **TCP port 1255** controls HEOS playback, browse/search, queues,
+  groups, and HEOS events.
+- Spotify Connect is separate from both. HEOS CLI does not provide Spotify
+  browse/search control.
+
+The protocol references in `docs/` are included so the bridges can be audited,
+extended, and tested against more models.
 
 ## Tested on
 
 | Model | Firmware | Contributor |
 |---|---|---|
-| Marantz Cinema 70s | — | @alsak0de |
+| Marantz Cinema 70s | HEOS 3.88.614 | @alsak0de |
 
 > **Have a different model?** Open a PR adding your row — even a partial one helps.
-
-## Quick start
-
-Five lines to read the current power state:
-
-```js
-import { createConnection } from "net";
-
-const socket = createConnection({ host: "192.168.1.X", port: 23 });
-socket.on("connect", () => socket.write("PW?\r"));
-socket.on("data", d => { console.log(d.toString()); socket.destroy(); });
-```
-
-```python
-import socket
-s = socket.create_connection(("192.168.1.X", 23))
-s.send(b"PW?\r")
-print(s.recv(64))
-s.close()
-```
 
 ## Contents
 
@@ -54,9 +75,9 @@ s.close()
 
 ## telnet2mqtt
 
-This repo includes a Node.js MQTT bridge that keeps a persistent TCP connection
-to the AVR Telnet port, publishes retained state topics, and accepts command
-topics without pre-publishing guessed state.
+`telnet2mqtt` keeps a persistent TCP connection to the AVR Telnet port,
+publishes retained hardware state topics, and accepts command topics without
+pre-publishing guessed state.
 
 ```sh
 cp .env.example .env
@@ -68,10 +89,9 @@ configuration and the full topic contract.
 
 ## heos2mqtt
 
-`heos2mqtt` is a separate Node.js MQTT bridge for the HEOS CLI on TCP port
-1255. It runs beside `telnet2mqtt` and covers HEOS playback, players, groups,
-queues, browse/search request responses, sources, account state, and HEOS
-events.
+`heos2mqtt` keeps a persistent TCP connection to the HEOS CLI port. It runs
+beside `telnet2mqtt` and covers HEOS playback, players, groups, queues,
+browse/search request responses, sources, account state, and HEOS events.
 
 ```sh
 cp .env.example .env

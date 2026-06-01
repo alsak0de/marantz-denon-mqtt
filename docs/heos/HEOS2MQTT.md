@@ -197,6 +197,9 @@ Responses are published to `home/heos/response/{request_id}`.
 - Some HEOS firmware versions clear mute as a side-effect of `set_volume`.
   `HEOS_PRESERVE_MUTE_ON_VOLUME=true` can reassert mute after that event, but
   the default is off because this is consumer policy rather than protocol.
+  When enabled, downstream consumers may briefly observe mute as `on -> off ->
+  on` during a muted volume change; edge-triggered mute automations should
+  debounce or wait for stable state.
 - For Home Station playback, avoid routing the living-room AVR's own HEOS
   engine back into a Zone 2 NET capture loop.
 - Use request/response topics for large, paginated, or transient results.

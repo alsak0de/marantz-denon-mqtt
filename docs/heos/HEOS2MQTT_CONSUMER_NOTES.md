@@ -217,6 +217,11 @@ safe across HEOS firmware versions.
   policy workaround. When enabled, the bridge checks player mute before sending
   `set_volume`; if the following volume event reports `mute=off` while the
   prior mute state was `on`, it sends `player/set_mute?state=on`.
+- Consumers should treat mute as level state, not as an edge-triggered action.
+  With `HEOS_PRESERVE_MUTE_ON_VOLUME=true`, firmware that emits `mute=off`
+  during `set_volume` can briefly publish `on -> off -> on` before the
+  workaround completes. If downstream automation reacts to mute edges, debounce
+  or wait for a short stable value window before acting.
 
 **Verification:**
 - If your firmware exhibits the mute-on-set-volume quirk, set

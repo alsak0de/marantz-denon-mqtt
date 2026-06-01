@@ -4,20 +4,32 @@ import { Heos2Mqtt } from "../../src/heos2mqtt/service.mjs";
 
 function service() {
   const published = [];
+  const logs = [];
   const instance = new Heos2Mqtt({
     mqttBaseTopic: "home/heos",
     heartbeatMs: 30000,
     requestTimeoutMs: 100,
     commandGapMs: 0,
     publishRaw: true,
+    probeQueueOnStart: false,
+    preserveMuteOnVolume: false,
     logLevel: "silent",
-  }, { log() {}, error() {} });
-  instance.mqttClient = {
-    publish(topic, payload, options) {
-      published.push({ topic, payload, retain: options.retain });
+  }, {
+    log(...args) {
+      logs.push(args.join(" "));
     },
+    error(...args) {
+      logs.push(args.join(" "));
+    },
+  });
+  instance.mqttClient = {
+    publish(topic, payload, options, callback) {
+      published.push({ topic, payload, retain: options.retain, qos: options.qos });
+      if (callback) setImmediate(() => callback());
+    },
+    async endAsync() {},
   };
-  return { instance, published };
+  return { instance, published, logs };
 }
 
 test("gates now-playing on play state", () => {
@@ -95,6 +107,82 @@ test("raw firehose publishes every HEOS line as non-retained JSON", () => {
   const raw = published.find(item => item.topic === "home/heos/event/raw");
   assert.equal(raw.retain, false);
   assert.match(JSON.parse(raw.payload).line, /system\/heart_beat/);
+});
+
+test("graceful stop publishes retained offline availability with qos 1 before MQTT end", async () => {
+  const { instance, published, logs } = service();
+  let ended = false;
+  instance.config.logLevel = "info";
+  instance.mqttClient.endAsync = async () => {
+    ended = true;
+  };
+  instance.socket = { destroy() {} };
+
+  await instance.stop();
+
+  assert.equal(ended, true);
+  const offline = published.find(item => item.topic === "home/heos/availability");
+  assert.deepEqual(offline, {
+    topic: "home/heos/availability",
+    payload: "offline",
+    retain: true,
+    qos: 1,
+  });
+  assert.equal(logs.some(line => line.includes("shutdown: published availability=offline")), true);
+});
+
+test("startup refresh skips queue probe by default", async () => {
+  const { instance } = service();
+  const commands = [];
+  instance.request = async (command, params) => {
+    commands.push({ command, params });
+    return {};
+  };
+
+  await instance.refreshPlayer("1");
+
+  assert.equal(commands.some(item => item.command === "player/get_queue"), false);
+});
+
+test("startup refresh can probe queue without range when explicitly enabled", async () => {
+  const { instance } = service();
+  const commands = [];
+  instance.config.probeQueueOnStart = true;
+  instance.request = async (command, params) => {
+    commands.push({ command, params });
+    return {};
+  };
+
+  await instance.refreshPlayer("1");
+
+  assert.deepEqual(commands.at(-1), { command: "player/get_queue", params: { pid: "1" } });
+});
+
+test("optional mute preservation reasserts mute after volume event unmutes firmware", async () => {
+  const { instance, published } = service();
+  const sent = [];
+  instance.config.preserveMuteOnVolume = true;
+  instance.request = async (command, params) => {
+    sent.push({ command, params });
+    if (command === "player/get_mute") return { params: { pid: params.pid, state: "on" } };
+    return { params };
+  };
+
+  await instance.sendCommands({ command: "player/set_volume", params: { pid: "1", level: 1 } });
+  await instance.handleEvent({
+    command: "event/player_volume_changed",
+    params: { pid: "1", level: "1", mute: "off" },
+  });
+  instance.handleHeosLine(JSON.stringify({
+    heos: { command: "player/set_mute", result: "ok", message: "pid=1&state=on" },
+  }));
+
+  assert.deepEqual(sent, [
+    { command: "player/get_mute", params: { pid: "1" } },
+    { command: "player/set_volume", params: { pid: "1", level: 1 } },
+    { command: "player/set_mute", params: { pid: "1", state: "on" } },
+  ]);
+  assert.equal(lastPayload(published, "home/heos/player/1/mute"), "on");
 });
 
 function lastPayload(published, topic) {

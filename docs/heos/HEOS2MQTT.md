@@ -44,6 +44,8 @@ docker compose up -d --build heos2mqtt
 | `HEOS_REQUEST_TIMEOUT_MS` | `5000` | Request timeout |
 | `HEOS_HEARTBEAT_MS` | `30000` | HEOS socket heartbeat interval |
 | `HEOS_AUTOFOCUS_PLAYER_NAME` | empty | Optional friendly-name match published under `main/*` aliases |
+| `HEOS_PROBE_QUEUE_ON_START` | `false` | Query each player's queue during startup. Off by default because some firmware rejects ranged startup queue probes. |
+| `HEOS_PRESERVE_MUTE_ON_VOLUME` | `false` | Optional policy workaround that reasserts mute if firmware clears mute after `set_volume`. |
 | `LOG_LEVEL` | `info` | Set to `silent` to reduce logs |
 
 ## State topics
@@ -173,12 +175,14 @@ Responses are published to `home/heos/response/{request_id}`.
 2. Connect to HEOS CLI on `HEOS_HOST:HEOS_PORT`.
 3. Send `system/register_for_change_events?enable=on`.
 4. Query players, groups, sources, and account state.
-5. For each player, query play state, now playing, volume, mute, play mode, and queue summary.
+5. For each player, query play state, now playing, volume, mute, and play mode.
 6. Continue listening for HEOS events and heartbeat the socket every 30 seconds.
 
 `availability` uses MQTT Last-Will-and-Testament: the broker publishes
 `offline` if the bridge connection drops unexpectedly, and the bridge publishes
-`online` retained when connected to MQTT.
+`online` retained when connected to MQTT. During planned shutdown through
+`SIGTERM` or `SIGINT`, the bridge also publishes retained
+`availability=offline` with QoS 1 before closing the MQTT connection.
 
 ## Safety rules
 
@@ -190,6 +194,9 @@ Responses are published to `home/heos/response/{request_id}`.
   such as `spotify:track:` for service-specific interpretation.
 - Long track-title truncation is upstream HEOS firmware behaviour; the bridge
   passes the truncated value through unchanged.
+- Some HEOS firmware versions clear mute as a side-effect of `set_volume`.
+  `HEOS_PRESERVE_MUTE_ON_VOLUME=true` can reassert mute after that event, but
+  the default is off because this is consumer policy rather than protocol.
 - For Home Station playback, avoid routing the living-room AVR's own HEOS
   engine back into a Zone 2 NET capture loop.
 - Use request/response topics for large, paginated, or transient results.

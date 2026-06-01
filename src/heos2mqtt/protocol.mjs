@@ -298,11 +298,11 @@ function requireJson(json, topic) {
 
 function rangeParams(json) {
   if (!json) return {};
-  return {
-    range: json.range,
-    start: json.start,
-    end: json.end,
-  };
+  const params = {};
+  if (json.range != null) params.range = json.range;
+  if (json.start != null) params.start = json.start;
+  if (json.end != null) params.end = json.end;
+  return params;
 }
 
 function normalized(value) {

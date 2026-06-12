@@ -31,6 +31,7 @@ export function readConfig(env = process.env) {
     commandGapMs: numberEnv(env.HEOS_COMMAND_GAP_MS, 100),
     requestTimeoutMs: numberEnv(env.HEOS_REQUEST_TIMEOUT_MS, 5000),
     heartbeatMs: numberEnv(env.HEOS_HEARTBEAT_MS, 30000),
+    nowPlayingDebounceMs: numberEnv(env.HEOS_NOW_PLAYING_DEBOUNCE_MS, 1000),
     probeQueueOnStart: booleanEnv(env.HEOS_PROBE_QUEUE_ON_START, false),
     preserveMuteOnVolume: booleanEnv(env.HEOS_PRESERVE_MUTE_ON_VOLUME, false),
     publishRaw: booleanEnv(env.MQTT_PUBLISH_RAW, true),

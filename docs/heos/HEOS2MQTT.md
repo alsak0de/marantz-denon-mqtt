@@ -43,7 +43,8 @@ docker compose up -d --build heos2mqtt
 | `HEOS_COMMAND_GAP_MS` | `100` | Delay between queued HEOS commands |
 | `HEOS_REQUEST_TIMEOUT_MS` | `5000` | Request timeout |
 | `HEOS_HEARTBEAT_MS` | `30000` | HEOS socket heartbeat interval |
-| `HEOS_AUTOFOCUS_PLAYER_NAME` | empty | Optional friendly-name match published under `main/*` aliases |
+| `HEOS_NOW_PLAYING_DEBOUNCE_MS` | `1000` | Debounce window for `event/player_now_playing_changed`, which HEOS emits 2-3 times per track change |
+| `HEOS_AUTOFOCUS_PLAYER_NAME` | empty | Optional friendly-name match published under `main/*` aliases, and the player that `cmd/player/main/*` commands target |
 | `HEOS_PROBE_QUEUE_ON_START` | `false` | Query each player's queue during startup. Off by default because some firmware rejects ranged startup queue probes. |
 | `HEOS_PRESERVE_MUTE_ON_VOLUME` | `false` | Optional policy workaround that reasserts mute if firmware clears mute after `set_volume`. |
 | `LOG_LEVEL` | `info` | Set to `silent` to reduce logs |
@@ -128,6 +129,11 @@ account credentials rather than sending passwords through retained broker logs.
 | `home/heos/cmd/player/{pid}/quickselect/play` | number |
 | `home/heos/cmd/player/{pid}/quickselect/get` | optional request JSON |
 | `home/heos/cmd/player/{pid}/check-update` | empty |
+
+For any player command, `{pid}` may be the literal `main`, which the bridge
+resolves to the `HEOS_AUTOFOCUS_PLAYER_NAME` player (e.g.
+`home/heos/cmd/player/main/get-now-playing`). If no autofocus player is
+configured, the command is rejected on `event/error`.
 
 ### Group
 

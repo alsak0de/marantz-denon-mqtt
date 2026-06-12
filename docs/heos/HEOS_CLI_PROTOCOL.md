@@ -154,7 +154,7 @@ The bridge should register for change events at startup and parse at least:
 | Event command | Meaning |
 |---|---|
 | `event/player_state_changed` | Player play state changed. |
-| `event/player_now_playing_media_changed` | Now-playing media changed. |
+| `event/player_now_playing_changed` | Now-playing media changed. |
 | `event/player_now_playing_progress` | Progress update. |
 | `event/player_volume_changed` | Player volume changed. |
 | `event/player_mute_changed` | Player mute changed. |

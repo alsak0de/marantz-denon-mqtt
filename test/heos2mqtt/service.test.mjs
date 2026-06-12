@@ -10,6 +10,7 @@ function service() {
     heartbeatMs: 30000,
     requestTimeoutMs: 100,
     commandGapMs: 0,
+    nowPlayingDebounceMs: 0,
     publishRaw: true,
     probeQueueOnStart: false,
     preserveMuteOnVolume: false,
@@ -81,11 +82,56 @@ test("now-playing changed event re-queries but still respects paused gate", asyn
   };
 
   instance.handleHeosLine(JSON.stringify({
-    heos: { command: "event/player_now_playing_media_changed", result: "ok", message: "pid=1" },
+    heos: { command: "event/player_now_playing_changed", result: "ok", message: "pid=1" },
   }));
-  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setTimeout(resolve, 5));
 
   assert.equal(lastPayload(published, "home/heos/player/1/now-playing"), "{}");
+});
+
+test("debounces repeated now-playing changed events into a single re-query", async () => {
+  const { instance } = service();
+  instance.playStateByPid.set("1", "play");
+  let queries = 0;
+  instance.request = async command => {
+    if (command === "player/get_now_playing_media") queries += 1;
+  };
+
+  // HEOS emits the event 2-3 times per track change.
+  for (let i = 0; i < 3; i += 1) {
+    instance.handleHeosLine(JSON.stringify({
+      heos: { command: "event/player_now_playing_changed", result: "ok", message: "pid=1" },
+    }));
+  }
+  await new Promise(resolve => setTimeout(resolve, 5));
+
+  assert.equal(queries, 1);
+});
+
+test("resolves the player/main alias to the autofocus pid", async () => {
+  const { instance } = service();
+  instance.autoFocusPid = "42";
+  const sent = [];
+  instance.request = async (command, params) => {
+    sent.push({ command, params });
+    return { params };
+  };
+
+  await instance.handleMqttMessage("home/heos/cmd/player/main/get-now-playing", Buffer.from(""), {});
+
+  assert.deepEqual(sent, [{ command: "player/get_now_playing_media", params: { pid: "42" } }]);
+});
+
+test("player/main without an autofocus player reports an error", async () => {
+  const { instance, published } = service();
+  instance.autoFocusPid = null;
+
+  await instance.handleMqttMessage("home/heos/cmd/player/main/get-now-playing", Buffer.from(""), {})
+    .catch(() => {});
+
+  const error = published.find(item => item.topic === "home/heos/event/error");
+  assert.ok(error, "expected an event/error publish");
+  assert.match(JSON.parse(error.payload).error, /autofocus/i);
 });
 
 test("autofocus alias mirrors player state topics", () => {

@@ -30,6 +30,7 @@ export class Heos2Mqtt {
     this.playStateByPid = new Map();
     this.muteStateByPid = new Map();
     this.pendingMutePreserve = new Set();
+    this.nowPlayingRefreshTimers = new Map();
     this.autoFocusPid = null;
     this.stopped = false;
   }
@@ -43,6 +44,8 @@ export class Heos2Mqtt {
     this.stopped = true;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    for (const timer of this.nowPlayingRefreshTimers.values()) clearTimeout(timer);
+    this.nowPlayingRefreshTimers.clear();
     this.socket?.destroy();
     await this.publishAvailabilityOffline();
     await this.mqttClient?.endAsync?.();
@@ -205,8 +208,10 @@ export class Heos2Mqtt {
         else this.publishNowPlaying(pid, {});
         break;
       }
-      case "event/player_now_playing_media_changed":
-        await this.refreshNowPlaying(event.params.pid);
+      case "event/player_now_playing_changed":
+        // HEOS emits this event 2-3 times per track change; debounce so we
+        // issue a single get_now_playing_media re-query per change.
+        this.scheduleNowPlayingRefresh(event.params.pid);
         break;
       case "event/player_now_playing_progress":
         this.publishPidPayload(event.params.pid, "progress", event.params);
@@ -324,6 +329,23 @@ export class Heos2Mqtt {
     await this.request("player/get_now_playing_media", { pid });
   }
 
+  scheduleNowPlayingRefresh(pid) {
+    if (pid == null) return;
+    const key = String(pid);
+    const existing = this.nowPlayingRefreshTimers.get(key);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => {
+      this.nowPlayingRefreshTimers.delete(key);
+      this.refreshNowPlaying(pid).catch(err => this.publishError({
+        command: "player/get_now_playing_media",
+        params: { pid },
+        error: err.message,
+      }));
+    }, this.config.nowPlayingDebounceMs ?? 1000);
+    if (typeof timer.unref === "function") timer.unref();
+    this.nowPlayingRefreshTimers.set(key, timer);
+  }
+
   async refreshQueue(pid) {
     await this.request("player/get_queue", { pid });
   }
@@ -340,7 +362,8 @@ export class Heos2Mqtt {
     const payload = payloadBuffer.toString();
     try {
       const commands = commandFromMqtt(relativeTopic, payload);
-      const results = await this.enqueueSend(...(Array.isArray(commands) ? commands : [commands]));
+      const list = (Array.isArray(commands) ? commands : [commands]).map(cmd => this.resolveMainAlias(cmd));
+      const results = await this.enqueueSend(...list);
       for (const result of results.flat()) {
         if (result?.request_id) this.publish(`response/${result.request_id}`, JSON.stringify(result.response), false);
       }
@@ -348,6 +371,19 @@ export class Heos2Mqtt {
       this.publishError({ topic, error: err.message });
       throw err;
     }
+  }
+
+  resolveMainAlias(cmd) {
+    // `player/main/...` targets the autofocus player. The protocol layer is
+    // pure (no runtime player state), so the literal "main" pid is rewritten
+    // here to the resolved autoFocusPid before it reaches HEOS.
+    if (cmd && typeof cmd === "object" && cmd.params?.pid === "main") {
+      if (!this.autoFocusPid) {
+        throw new Error("player/main requires HEOS_AUTOFOCUS_PLAYER_NAME to resolve to a player.");
+      }
+      return { ...cmd, params: { ...cmd.params, pid: this.autoFocusPid } };
+    }
+    return cmd;
   }
 
   enqueueSend(...commands) {
